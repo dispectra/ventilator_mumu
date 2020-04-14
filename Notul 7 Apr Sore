@@ -1,0 +1,20 @@
+Target: Tes Kemenkes
+
+1. Variasi Volume Tidal
+- UI Nextion disiapkan
+
+- Integrasi ke Nextion disiapkan
+
+- Pengujian sensor
+-- Sensor Tekanan ( Siapin 3d print valve )
+--- Uji tekanan secara kasar dl
+--- Atau pakai manometer pak augie (beli connector manometer)
+-- Sensor oksigen (bsk dateng seharusnya sih)
+--- Uji coba dulu
+
+- Feedback sensor ke mana ?
+-- O2 --> Valve
+-- Tekanan --> Motor, how ?
+-- Flow --> where ?
+
+- Kalibrasi step vs volum, pakai spirometer

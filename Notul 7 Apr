@@ -1,0 +1,16 @@
+accel = torq / inertia
+
+RR = 60;
+Step Tidal = 410
+13:24:07.499 -> Slope Tidal = 0.45
+13:24:07.499 -> ----
+13:24:07.499 -> DELAY Awal = 500
+13:24:07.499 -> DELAY Inhale = 220
+13:24:07.533 -> DELAY Exhale = 220
+
+
+Maks di 660 step
+
+Before --> 600 step udah 750 ml
+
+stroke = 145 - 64 = 81

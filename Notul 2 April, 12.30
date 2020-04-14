@@ -1,0 +1,24 @@
+Kemenkes, bisa dicontrol:
+1. Pressure
+2. Volume
+3. Time
+
+RR pakai lookup table
+
+Pressure pakai tabel dulu (?)
+
+Nextion dikonek ke potensio, dibikin range step aja 
+-- RR resolusinya disesuaikan trilogi 
+
+Motor minta dipasang limit switch mekanik (atas sama bawah untuk safety)
+
+Motor disesuaikan RR dan IE
+
+Kalibrasi sensor blm ada standar --> 
+-- Kalibrasi pakai alat ukur medis
+
+
+Perlu kalibrasi Volum dan Pressure 
+Cek alat2 medis untuk ukur volume (survey/telp ke toko sakura) - Artificial Lung
+
+Beli sensor switch, sensor oksigen, driver, sakura cek alat ukur vol dan tekanan

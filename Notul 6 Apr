@@ -1,0 +1,29 @@
+RevisiStepper 6 Apr
+- Slope sudah bisa 
+
+RevisiStepper2 6 April
+- RR -> Time Inhale + Exhale 
+- IE -> Time Inhale, berhenti, Exhale berhenti
+- Vtj -> Akselerasi (Slope diubah2, step tetap)
+-- RESEP RR 60 
+--- initDelay 400
+--- Slope 0.15
+--- Delay 80
+
+
+
+Datasheet DM860:
+- delay antar pulse min 3 microsec (2.5 but let's just round it for the sake of simplicity)
+- Delay dari ganti dir sampai mulai pul paling engga 5 microsec
+
+RR 14
+IE 2
+slope 0.15
+step 900
+1000ml +
+
+RR 14
+IE 2
+Slope 0.5
+Step 600
+750ml
