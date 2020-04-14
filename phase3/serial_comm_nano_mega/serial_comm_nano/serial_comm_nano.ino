@@ -41,15 +41,6 @@ String listeningMega(){
   return seriesData;
 }
 
-String listeningMega2() {
-  String message = "";
-  while (SerialM.available() > 0) {
-    message = SerialM.readStringUntil('\n');
-  }
-
-  return message;
-}
-
 /* 
 // listeningMegaOld(), with timeout
 String listeningMegaOld(unsigned long timeout){
