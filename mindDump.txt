@@ -1,0 +1,1 @@
+Baca serial tiap ngirim step ke motor

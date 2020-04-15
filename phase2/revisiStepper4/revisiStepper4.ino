@@ -13,12 +13,12 @@
 // stepPin = pin PUL+
 // microstepping = settingan microstepping (1 / 2 / 4 / 8 / 16)
 // dirInhale = arah untuk inhale (HIGH / LOW)
-#define dirPin 9
+#define dirPin 4
 #define stepPin 3
 #define microstepping 4
 #define dirInhale LOW
-#define limitSwitchIn 11
-#define limitSwitchEx 12
+#define limitSwitchIn 5
+#define limitSwitchEx 6
 
 // Slope2an
 #define initDelay 500
@@ -48,14 +48,14 @@ void setup() {
   timeBreath = (60000 / float(RR)) * 1000;
   timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
   timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
-  delayInhale = 220; // dalam microseconds
+  delayInhale = 320; // dalam microseconds
   delayExhale = delayInhale; // dalam microseconds
   
 //  timeInEx = stepTidal * delayInhale/; 
 
+  pinMode(2, INPUT_PULLUP);
   pinMode(7, INPUT_PULLUP);
-  pinMode(4, INPUT_PULLUP);
-  pinMode(5, INPUT_PULLUP);
+  pinMode(8, INPUT_PULLUP);
   pinMode(limitSwitchIn, INPUT_PULLUP);
   pinMode(limitSwitchEx, INPUT_PULLUP);
   
@@ -76,7 +76,8 @@ void setup() {
 
 //-- LOOP ============================================================================
 void loop() {
-  if(digitalRead(7) == LOW){
+  if(digitalRead(2) == LOW){
+    Serial.println("MODE 1");
     if (stepTidal > 0) {
       unsigned long now = micros();
       
@@ -101,7 +102,8 @@ void loop() {
       //throw error message
  
     }
-  } else if(digitalRead(4) == LOW){
+  } else if(digitalRead(7) == LOW){
+    Serial.println("Cal In");
       digitalWrite(dirPin, LOW);
       if(digitalRead(limitSwitchIn)){
         digitalWrite(stepPin, HIGH);
@@ -111,7 +113,8 @@ void loop() {
         digitalWrite(stepPin, LOW);
       }
       delayMicroseconds(2000);
-  } else if(digitalRead(5) == LOW){
+  } else if(digitalRead(8) == LOW){
+    Serial.println("Cal Out");
       digitalWrite(dirPin, HIGH); 
       if(digitalRead(limitSwitchEx)){
         digitalWrite(stepPin, HIGH);
@@ -128,7 +131,7 @@ void loop() {
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
   float lookup_vol[] = {500, 750, 1000, 1250};
-  float lookup_step[] = {480, 550, 660, 700};
+  float lookup_step[] = {480, 550, 660, 770};
 
   float stepTidal = 0;
   int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);

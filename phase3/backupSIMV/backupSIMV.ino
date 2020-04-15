@@ -4,7 +4,7 @@
 
 #include <SoftwareSerial.h>
 
-SoftwareSerial SerialM(11,12); //RX, TX
+SoftwareSerial SerialM(2,3); //RX, TX
 
 /////////////////////////////////// BREATHING PART //////////////////////////////////
 
@@ -32,7 +32,7 @@ SoftwareSerial SerialM(11,12); //RX, TX
 #define limitSwitchEx 6
 #define calManMaju 7
 #define calManMundur 8
-#define LEDCallibrate 13
+#define LEDCallibrate 12
 
 bool callibrated = false;
 /////////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,6 @@ bool triggerInhale = 0;
 int stateNow = 9;
 
 String lastData = "<0,0,0,0,0,0,0>";
-bool spontaneousPrev = false;
 
 unsigned long stepTidal, delayInhale, delayExhale, timeInEx;
 float timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay;
@@ -61,7 +60,7 @@ void setup() {
   SerialM.begin(38400);
 
   slopeFactor = 0.5;
-  delayInhale = 320; // dalam microseconds
+  delayInhale = 220; // dalam microseconds
   delayExhale = delayInhale; // dalam microseconds
   initDelay = 500;
 
@@ -80,74 +79,45 @@ void setup() {
 }
 
 void loop() {
-  unsigned long timeInhaleReal;
-
   updateAllGlobalVars();
-//  delayMicroseconds(500);
+
+  stepTidal = cekTidal(Vtidal);
+  timeBreath = (60000 / float(RR)) * 1000;
+  timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
+  timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
 
   if (statusOn) {
-//      Serial.println(Vtidal);
-      stepTidal = cekTidal(Vtidal);
-      timeBreath = (60000 / float(RR)) * 1000;
-      timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
-      timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
-
-      if(stateNow == 0){
-        Serial.println("==> STATUS: ON");
+      Serial.println("==> STATUS: ON");
+      unsigned long timeStart = micros();
+      bool breath = false;
+      
+      while(micros()-timeStart < timeBreath){
+        if(checkInhale()){
+          if(stateNow !=2){
+            Serial.println("=> STATE: 2");
+            stateNow = 2;
+          }
+          state2();
+          breath = true;
+          break;
+        } else {
+          // pass
+        }
       }
-
-      if(spontaneousPrev){ stateNow = 2; Serial.println("==> STATE 2");}
-      else{stateNow = 1;Serial.println("==> STATE 1");}
-
-      spontaneousPrev = false;
-
-      Serial.println("==================");
-      Serial.println("Vol Tidal = " + String(Vtidal));
-      Serial.println("Step Tidal = " + String(stepTidal));
-      Serial.println("Slope Tidal = " + String(slopeFactor));
-      Serial.println("----");
-      Serial.println("DELAY Awal = " + String(initDelay));
-      Serial.println("DELAY Inhale = " + String(delayInhale));
-      Serial.println("DELAY Exhale = " + String(delayExhale));
-      Serial.println("----");
-      Serial.println("WAKTU BREATH = " + String(timeBreath));
-      Serial.println("WAKTU IDEAL Inhale = " + String(timeInhale));
-      Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
-      Serial.println("----");
-
-      unsigned long now = micros();
-
-      if(stateNow == 1){
-        Inhale();
-
-        while((micros()-now) < timeInhale){delayMicroseconds(1);}
-        timeInhaleReal = micros()-now;
-        Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
-
-        Exhale(stepTidal);
-      } else if(stateNow == 2){
-        int stepTidal2 = Inhale2();
-
-        while((micros()-now) < timeInhale){delayMicroseconds(1);}
-        timeInhaleReal = micros()-now;
-        Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
-
-        Exhale(stepTidal2);
+      if(!breath){
+        if(stateNow != 1){
+            Serial.println("=> STATE: 1");
+            stateNow = 1;
+          }
+        state1();
       }
-
-
-      while((micros()-now) < timeBreath){delayMicroseconds(1);}
-      Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal));
-
-      Serial.println("TIME TAKEN : " + String(micros() - now));
-      Serial.println("----");
-
+      callibrated = false;
   } else {
     if(stateNow !=0){
       Serial.println("==> STATUS: OFF");Serial.flush();
       stateNow = 0;
     }
-
+    
     if (!callibrated) {
       Callibrate();
     }
@@ -155,50 +125,77 @@ void loop() {
 }
 
 //== FUNCTION STATES ==================================================
-//-- Sekuens Inhale ====================================================================
-void Inhale() {
-  // 0. Init Variables
-  unsigned long now = micros();
-  float delayInhale2 = initDelay;
-  int stepCount = 0;
+// Controlled
+void state1(){
+  Serial.println("==================");
+  Serial.println("Vol Tidal = " + String(Vtidal));
+  Serial.println("Step Tidal = " + String(stepTidal));
+  Serial.println("Slope Tidal = " + String(slopeFactor));
+  Serial.println("----");
+  Serial.println("DELAY Awal = " + String(initDelay));
+  Serial.println("DELAY Inhale = " + String(delayInhale));
+  Serial.println("DELAY Exhale = " + String(delayExhale));
+  Serial.println("----");
+  Serial.println("WAKTU BREATH = " + String(timeBreath));
+  Serial.println("WAKTU IDEAL Inhale = " + String(timeInhale));
+  Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
+  Serial.println("----");
+  if (stepTidal > 0) {
+    unsigned long now = micros();
 
-  // 1. Set Arah
-  digitalWrite(dirPin, dirInhale);
-  delayMicroseconds(5);
+    int stepTidal2 = Inhale(stepTidal, delayInhale, slopeFactor, initDelay);
 
-  // 2. Set Gerakan Stepper
-  for(int i = 0; i < stepTidal; i++) { // UNTUK DIPERIKSA
-    if(i < slopeFactor*stepTidal){
-      delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
-    if(i>(1-slopeFactor)*stepTidal){
-      delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
+    while((micros()-now) < timeInhale){delayMicroseconds(1);}
+    unsigned long timeInhaleReal = micros()-now;
+    Serial.println("==> TIME INHALE : " + String(timeInhaleReal)); Serial.flush();
 
-    if(digitalRead(limitSwitchIn)){
-      digitalWrite(stepPin, HIGH);
-    }
+    Exhale(stepTidal2, delayExhale, slopeFactor, initDelay);
 
-    delayMicroseconds(delayInhale2);
+    while((micros()-now) < timeBreath){delayMicroseconds(1);}
+    Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal)); Serial.flush();
 
-    if(digitalRead(limitSwitchIn)){
-      digitalWrite(stepPin, LOW);
-    }
+    Serial.println("TIME TAKEN : " + String(micros() - now)); Serial.flush();
+    Serial.println("----"); Serial.flush();
 
-    delayMicroseconds(delayInhale2);
-
-    stepCount += 1;
   }
+}
 
-  Serial.println(stepCount);
+void state2(){
+  Serial.println("==================");
+  Serial.println("Vol Tidal = " + String(Vtidal));
+  Serial.println("Step Tidal = " + String(stepTidal));
+  Serial.println("Slope Tidal = " + String(slopeFactor));
+  Serial.println("----");
+  Serial.println("DELAY Awal = " + String(initDelay));
+  Serial.println("DELAY Inhale = " + String(delayInhale));
+  Serial.println("DELAY Exhale = " + String(delayExhale));
+  Serial.println("----");
+  Serial.println("WAKTU BREATH = " + String(timeBreath));
+  Serial.println("WAKTU IDEAL Inhale = " + String(timeInhale));
+  Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
+  Serial.println("----");
+  if (stepTidal > 0) {
+    now = micros();
 
-  // 3. Tampil Waktu
-  Serial.print("Waktu Inhale = ");
-  Serial.println(micros() - now);
+    int stepTidal2 = Inhale(stepTidal2, delayInhale, slopeFactor, initDelay);
+
+    while((micros()-now) < timeInhale){delayMicroseconds(1);}
+    unsigned long timeInhaleReal = micros()-now;
+    Serial.println("==> TIME INHALE : " + String(timeInhaleReal)); Serial.flush();
+
+    Exhale(stepTidal2, delayExhale, slopeFactor, initDelay);
+
+    while((micros()-now) < timeBreath){delayMicroseconds(1);}
+    Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal)); Serial.flush();
+
+    Serial.println("TIME TAKEN : " + String(micros() - now)); Serial.flush();
+    Serial.println("----"); Serial.flush();
+
+  }
 }
 
 //-- Sekuens Inhale ====================================================================
-int Inhale2() {
+int Inhale(int stepTidal, unsigned long delayInhale, float slopeFactor, float initDelay) {
   // 0. Init Variables
   unsigned long now = micros();
   float delayInhale2 = initDelay;
@@ -209,39 +206,70 @@ int Inhale2() {
   delayMicroseconds(5);
 
   // 2. Set Gerakan Stepper
-  for(int i = 0; i < stepTidal && !checkVolume(); i++) {
-    if(i < slopeFactor*stepTidal){
-      delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
+  if (delayInhale2 > 16383){
+    for(int i = 0; i < stepTidal && !checkVolume(); i++) {
+      if(i < slopeFactor*stepTidal){
+        delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
+      }
+      if(i>(1-slopeFactor)*stepTidal){
+        delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
+      }
+
+      if(digitalRead(limitSwitchIn)){
+        digitalWrite(stepPin, HIGH);
+      }
+
+      for(int j=0; j < delayInhale2/16383; j++){
+        delayMicroseconds(16383);
+      }
+      delayMicroseconds(int(delayInhale2) % 16383);
+
+      if(digitalRead(limitSwitchIn)){
+        digitalWrite(stepPin, LOW);
+      }
+
+      for(int j=0; j < delayInhale2/16383; j++){
+        delayMicroseconds(16383);
+      }
+      delayMicroseconds(int(delayInhale2) % 16383);
+
+      stepCount += 1;
     }
-    if(i>(1-slopeFactor)*stepTidal){
-      delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
+  } else {
+    for(int i = 0; i < stepTidal && !checkVolume(); i++) {
+      if(i < slopeFactor*stepTidal){
+        delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
+      }
+      if(i>(1-slopeFactor)*stepTidal){
+        delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
+      }
+
+      if(digitalRead(limitSwitchIn)){
+        digitalWrite(stepPin, HIGH);
+      }
+
+      delayMicroseconds(delayInhale2);
+
+      if(digitalRead(limitSwitchIn)){
+        digitalWrite(stepPin, LOW);
+      }
+
+      delayMicroseconds(delayInhale2);
+
+      stepCount += 1;
     }
 
-    if(digitalRead(limitSwitchIn)){
-      digitalWrite(stepPin, HIGH);
-    }
-
-    delayMicroseconds(delayInhale2);
-
-    if(digitalRead(limitSwitchIn)){
-      digitalWrite(stepPin, LOW);
-    }
-
-    delayMicroseconds(delayInhale2);
-
-    stepCount += 1;
+    Serial.println(stepCount);
+    return stepCount;
   }
-
-  Serial.println(stepCount);
 
   // 3. Tampil Waktu
   Serial.print("Waktu Inhale = ");
   Serial.println(micros() - now);
-  return stepCount;
 }
 
 //-- Sekuens Exhale ====================================================================
-void Exhale(int stepTidalE) {
+void Exhale(int stepTidal, unsigned long delayExhale, float slopeFactor, float initDelay) {
   // 0. Init Variables
   unsigned long now = micros();
   float delayExhale2 = initDelay;
@@ -251,29 +279,54 @@ void Exhale(int stepTidalE) {
   delayMicroseconds(5);
 
   // 2. Set Gerakan Stepper
-  for(int i = 0; i < stepTidalE; i++) {
-    if(i < slopeFactor*stepTidalE){
-      delayExhale2 -= (initDelay-delayExhale) / (slopeFactor*stepTidalE);
-    }
-    if(i>(1-slopeFactor)*stepTidal){
-      delayExhale2 += (initDelay-delayExhale) / (slopeFactor*stepTidalE);
-    }
+  if (delayExhale2 > 16383){
+    for(int i = 0; i < stepTidal; i++) {
+      if(i < slopeFactor*stepTidal){
+        delayExhale2 -= (initDelay-delayExhale) / (slopeFactor*stepTidal);
+      }
+      if(i>(1-slopeFactor)*stepTidal){
+        delayExhale2 += (initDelay-delayExhale) / (slopeFactor*stepTidal);
+      }
 
-    if(checkInhale()){
-      spontaneousPrev = true;
+      if(digitalRead(limitSwitchEx)){
+        digitalWrite(stepPin, HIGH);
+      }
+
+      for(int j=0; j < delayExhale2/16383; j++){
+        delayMicroseconds(16383);
+      }
+      delayMicroseconds(int(delayExhale2) % 16383);
+
+      if(digitalRead(limitSwitchEx)){
+        digitalWrite(stepPin, LOW);
+      }
+
+      for(int j=0; j < delayExhale2/16383; j++){
+        delayMicroseconds(16383);
+      }
+      delayMicroseconds(int(delayExhale2) % 16383);
     }
+  } else {
+    for(int i = 0; i < stepTidal; i++) {
+      if(i < slopeFactor*stepTidal){
+        delayExhale2 -= (initDelay-delayExhale) / (slopeFactor*stepTidal);
+      }
+      if(i>(1-slopeFactor)*stepTidal){
+        delayExhale2 += (initDelay-delayExhale) / (slopeFactor*stepTidal);
+      }
 
-    if(digitalRead(limitSwitchEx)){
-      digitalWrite(stepPin, HIGH);
+      if(digitalRead(limitSwitchEx)){
+        digitalWrite(stepPin, HIGH);
+      }
+
+      delayMicroseconds(delayExhale2);
+
+      if(digitalRead(limitSwitchEx)){
+        digitalWrite(stepPin, LOW);
+      }
+
+      delayMicroseconds(delayExhale2);
     }
-
-    delayMicroseconds(delayExhale2);
-
-    if(digitalRead(limitSwitchEx)){
-      digitalWrite(stepPin, LOW);
-    }
-
-    delayMicroseconds(delayExhale2);
   }
 
   // 3. Tampil Waktu
@@ -373,7 +426,6 @@ void updateAllGlobalVars(){
     bufferq[i] = received.substring(indexStart, indexEnd);
     indexStart = indexEnd+1;
 //    Serial.println(String(i) + ": " + bufferq[i]);
-
   }
 
   statusOn = bufferq[0].toInt();
@@ -383,15 +435,6 @@ void updateAllGlobalVars(){
   ERat = bufferq[4].toFloat();
   RR = bufferq[5].toInt();
   triggerInhale = bufferq[6].toInt();
-//  Serial.println("StatusOn: " + String(statusOn));
-//  Serial.println("warnVol: " + String(warnVol));
-//  Serial.println("warnPres: " + String(warnPres));
-//  Serial.println("Vtidal: " + String(Vtidal));
-//  Serial.println("ERat: " + String(ERat));
-//  Serial.println("RR: " + String(RR));
-//  Serial.println("triggerInhale: " + String(triggerInhale));
-//  Serial.println("--------");
-//  delay(1000);
 }
 
 // Update Buffer from serial
@@ -401,8 +444,8 @@ String listeningMega(){
 
 //  Serial.println(F("Waiting data from Mega...")); Serial.flush();
   while (!quit) {
-    if (SerialM.available() > 0) {
-      char x = SerialM.read();
+    if (Serial.available() > 0) {
+      char x = Serial.read();
       if (x == '>'){
         seriesData += x;
         quit = true;
@@ -419,20 +462,18 @@ String listeningMega(){
 
   //!! Dummy Data !!
 //  seriesData = "<0,0,0,1250,2,14,1>";
-
+  
   String seriesData2 = seriesData.substring(1,seriesData.length()-1);
 
   return seriesData2;
 }
 
 bool checkInhale(){
-  String received = listeningMega();
-  triggerInhale = received.substring(received.length()-1, received.length()).toInt();
+  updateAllGlobalVars();
   return triggerInhale;
 }
 
 bool checkVolume(){
-  String received = listeningMega();
-  warnVol = received.substring(1,2).toInt();
+  updateAllGlobalVars();
   return warnVol;
 }

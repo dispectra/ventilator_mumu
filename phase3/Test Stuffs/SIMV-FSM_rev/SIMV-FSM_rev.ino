@@ -61,7 +61,7 @@ void setup() {
   SerialM.begin(38400);
 
   slopeFactor = 0.5;
-  delayInhale = 320; // dalam microseconds
+  delayInhale = 220; // dalam microseconds
   delayExhale = delayInhale; // dalam microseconds
   initDelay = 500;
 
@@ -81,7 +81,7 @@ void setup() {
 
 void loop() {
   unsigned long timeInhaleReal;
-
+  
   updateAllGlobalVars();
 //  delayMicroseconds(500);
 
@@ -91,11 +91,11 @@ void loop() {
       timeBreath = (60000 / float(RR)) * 1000;
       timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
       timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
-
+      
       if(stateNow == 0){
         Serial.println("==> STATUS: ON");
       }
-
+ 
       if(spontaneousPrev){ stateNow = 2; Serial.println("==> STATE 2");}
       else{stateNow = 1;Serial.println("==> STATE 1");}
 
@@ -116,14 +116,14 @@ void loop() {
       Serial.println("----");
 
       unsigned long now = micros();
-
+      
       if(stateNow == 1){
         Inhale();
-
+    
         while((micros()-now) < timeInhale){delayMicroseconds(1);}
         timeInhaleReal = micros()-now;
         Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
-
+          
         Exhale(stepTidal);
       } else if(stateNow == 2){
         int stepTidal2 = Inhale2();
@@ -131,23 +131,23 @@ void loop() {
         while((micros()-now) < timeInhale){delayMicroseconds(1);}
         timeInhaleReal = micros()-now;
         Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
-
+          
         Exhale(stepTidal2);
       }
-
-
+      
+  
       while((micros()-now) < timeBreath){delayMicroseconds(1);}
       Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal));
-
+      
       Serial.println("TIME TAKEN : " + String(micros() - now));
       Serial.println("----");
-
+      
   } else {
     if(stateNow !=0){
       Serial.println("==> STATUS: OFF");Serial.flush();
       stateNow = 0;
     }
-
+    
     if (!callibrated) {
       Callibrate();
     }
@@ -373,7 +373,7 @@ void updateAllGlobalVars(){
     bufferq[i] = received.substring(indexStart, indexEnd);
     indexStart = indexEnd+1;
 //    Serial.println(String(i) + ": " + bufferq[i]);
-
+    
   }
 
   statusOn = bufferq[0].toInt();
@@ -419,7 +419,7 @@ String listeningMega(){
 
   //!! Dummy Data !!
 //  seriesData = "<0,0,0,1250,2,14,1>";
-
+  
   String seriesData2 = seriesData.substring(1,seriesData.length()-1);
 
   return seriesData2;
