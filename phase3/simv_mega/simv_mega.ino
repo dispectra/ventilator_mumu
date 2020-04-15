@@ -16,7 +16,7 @@
 boolean warningVolume = 0;
 boolean warningPressure = 0;
 //int Vti = 500;
-float ERat = 0.2;
+float ERat = 2;
 //int RR = 12;
 boolean triggerInhale = 0;
 
@@ -212,7 +212,7 @@ void b8PushCallback(void *ptr) {  // Press event for button b8
   IE++;
   if(IE>=60)
   {IE=60;}
-  ERat = IE/10;
+  ERat = float(IE)/10;
   update2Nano();
 }
 
