@@ -21,7 +21,7 @@
 #define limitSwitchEx 6
 
 // Slope2an
-#define initDelay 500
+#define initDelay 470
 
 //-- Input HMI ======================================================================
 // volTidal = Volume Tidal (cc)
@@ -29,8 +29,8 @@
 // RR = Respiration Rate (x per minute)
 float volTidal = 1250;
 int IRat = 1;
-int ERat = 2;
-int RR = 14;
+int ERat = 3;
+int RR = 15;
 
 //-- GLOBAL VARIABLEs ===============================================================
 unsigned long stepTidal, delayInhale, delayExhale, timeInEx;
@@ -43,12 +43,12 @@ void setup() {
   pinMode(dirPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   
-  slopeFactor = 0.25;
+  slopeFactor = 0.5;
   stepTidal = cekTidal(volTidal);
   timeBreath = (60000 / float(RR)) * 1000;
   timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
   timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
-  delayInhale = 320; // dalam microseconds
+  delayInhale = 470; // dalam microseconds
   delayExhale = delayInhale; // dalam microseconds
   
 //  timeInEx = stepTidal * delayInhale/; 
@@ -131,7 +131,7 @@ void loop() {
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
   float lookup_vol[] = {500, 750, 1000, 1250};
-  float lookup_step[] = {480, 550, 660, 770};
+  float lookup_step[] = {480, 550, 660, 950};
 
   float stepTidal = 0;
   int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);

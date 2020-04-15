@@ -1,1 +1,11 @@
 Baca serial tiap ngirim step ke motor
+
+IE 1 2
+RR 10, Init 1000, delay 800
+RR 14, Init 700, delay 630
+RR 15, Init 650,  delay 600
+
+IE 1 3
+RR 15, Init 470, delay 470
+
+Full @ 950 step
