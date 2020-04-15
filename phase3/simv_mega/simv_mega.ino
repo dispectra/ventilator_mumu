@@ -180,7 +180,7 @@ void update2Nano() {
 }
 
 //-- Digital Filter ----------------------------------------
-float signalFilter(float newImpulse) {
+float digitalFilter(float newImpulse) {
   // Variable declaration
   byte filterOrder = 5;
   float impulse[] = {0.0, 0.0, 0.0, 0.0, 0.0};
@@ -212,12 +212,14 @@ void b8PushCallback(void *ptr) {  // Press event for button b8
   IE++;
   if(IE>=60)
   {IE=60;}
+  ERat = IE/10;
   update2Nano();
 }
 
 void b7PushCallback(void *ptr) {  // Press event for button b7
   IE--; 
   if(IE==4294967295){IE=0;}
+  ERat = IE/10;
   update2Nano();
 }
 
