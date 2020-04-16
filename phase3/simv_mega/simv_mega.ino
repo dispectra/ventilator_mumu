@@ -16,7 +16,7 @@
 boolean warningVolume = 0;
 boolean warningPressure = 0;
 //int Vti = 500;
-float ERat = 2;
+float ERat = 0.2;
 //int RR = 12;
 boolean triggerInhale = 0;
 
@@ -54,14 +54,14 @@ NexTouch *nex_listen_list[] = {
 };
 
   // Pressure and Flow variables
-uint8_t tekanan;
-uint8_t flow;
-const int PIN_MPX5010DP = A1;
-const int PIN_MPX5010F = A0;
-int MPX5010DP_rawValue;
-int MPX5010F_rawValue;
-float MPX5010DP_pressureValue;
-float MPX5010F_flowValue;
+uint8_t pressure_int8;
+uint8_t flow_int8;
+const int PIN_MPX5010DP_pressure = A1;
+const int PIN_MPX5010DP_flow = A0;
+int pressure_raw;
+int flow_raw;
+float pressure_float;
+float flow_float;
 
 //== MAIN SETUP ============================================
 void setup() {
@@ -113,8 +113,8 @@ void loop() {
   while (mode == 0) {
     nexLoop(nex_listen_list);
     //    dbSerialPrintln(mode);
-    baca_flow();
-    baca_tekanan();
+    flowUpdate();
+    pressureUpdate();
     if (CurrentPage != 1) {
       break;
     }
@@ -125,8 +125,8 @@ void loop() {
   while (mode == 1) {
     nexLoop(nex_listen_list);
     //    dbSerialPrintln(mode);
-    baca_flow();
-    baca_tekanan();
+    flowUpdate();
+    pressureUpdate();
     if (CurrentPage != 1) {
       break;
     }
@@ -206,13 +206,18 @@ float mapFloat(int rawX, int rawA, int rawB, float realA, float realB) {
   float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
   return realX;
 }
+  // function overloading of mapFloat()
+float mapFloat(int rawX, float rawA, float rawB, float realA, float realB) {
+  float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
+  return realX;
+}
 
 //-- Nextion button callback -------------------------------
 void b8PushCallback(void *ptr) {  // Press event for button b8
   IE++;
   if(IE>=60)
   {IE=60;}
-  ERat = float(IE)/10;
+  ERat = IE/10;
   update2Nano();
 }
 
@@ -313,10 +318,11 @@ void page6PushCallback(void *ptr) {
 
 //-- MPX5010DP pressure sensor ----------------
 float calcDatasheetPressure(int x_adc) {
-  /* Function to return differential pressure value from raw ADC value by
-     following typical characteristic in the datasheet
-     ( http://contrails.free.fr/temp/MPX5010.pdf )
-  */
+  /* Function to return differential pressure value (in cmH2O) 
+   * from raw ADC value by
+   * following typical characteristic in the datasheet
+   * ( http://contrails.free.fr/temp/MPX5010.pdf )
+   */
   const int abr = 1023; // ADC bit range
   const int avr = 5;    // ADC voltage range (in volt)
   const float dvo = 0.2;  // Datasheet voltage offset (in volt)
@@ -327,26 +333,50 @@ float calcDatasheetPressure(int x_adc) {
   return pds_cmh2o;
 }
 
-void baca_flow() {
-  MPX5010F_rawValue = analogRead(PIN_MPX5010F);
-  MPX5010F_flowValue = calcDatasheetPressure(MPX5010F_rawValue);
-  MPX5010F_flowValue = sqrt((MPX5010F_flowValue * 2 * 98.06) / 123000) * 0.064 * 60 * 1000;
-  MPX5010F_flowValue = (MPX5010F_flowValue - 100) * 1.6;
-  flow = int(MPX5010F_flowValue);
+void flowUpdate() {
+  // Read sensor output
+  flow_raw = analogRead(PIN_MPX5010DP_flow);
+
+  // Conversion to cmH2O based on datasheet
+  flow_float = calcDatasheetPressure(flow_raw);
+  
+  // Calibration using raw value (already square-rooted) as the formula of differential pressure -> flow
+  int adcA = 111; float flowA = 11; //Measurement #1
+  int adcB = 222; float flowB = 22; //Measurement #2
+  flow_float = mapFloat(flow_raw, float(sqrt(adcA)), float(sqrt(adcB)), flowA, flowB);
+
+  // Convert value from DP (cmH20) to flow (LPM | litre per minute)
+  flow_float = sqrt((flow_float * 2 * 98.06) / 123000) * 0.064 * 60 * 1000;
+  flow_float = (flow_float - 100) * 1.6;
+  
+  // Update to Nextion Waveform Graph
+  flow_int8 = int(flow_float);
   Serial2.print("add 2,0,");
-  Serial2.print(flow);
+  Serial2.print(flow_int8);
   Serial2.write(0xff);
   Serial2.write(0xff);
   Serial2.write(0xff);
 }
 
-void baca_tekanan() {
-  MPX5010DP_rawValue = analogRead(PIN_MPX5010DP);
-  MPX5010DP_pressureValue = calcDatasheetPressure(MPX5010DP_rawValue);
-  MPX5010DP_pressureValue = MPX5010DP_pressureValue * 100 * 1.062;
-  tekanan = (int)MPX5010DP_pressureValue;
+void pressureUpdate() {
+  // Read sensor output
+  pressure_raw = analogRead(PIN_MPX5010DP_pressure);
+
+  // Conversion to cmH2O based on datasheet
+  pressure_float = calcDatasheetPressure(pressure_raw);
+
+  // Calibration using raw value
+  int adcA = 111; float pressureA = 11; //Measurement #1
+  int adcB = 222; float pressureB = 22; //Measurement #2
+  pressure_float = mapFloat(pressure_raw, adcA, adcB, pressureA, pressureB);
+
+  // Convert to Nextion Graph scaling (ver. mas husnul)
+  pressure_float = pressure_float * 100 * 1.062;
+  pressure_int8 = int(pressure_float);
+  
+  // Update to Nextion Waveform Graph
   Serial2.print("add 1,0,");
-  Serial2.print(tekanan);
+  Serial2.print(pressure_int8);
   Serial2.write(0xff);
   Serial2.write(0xff);
   Serial2.write(0xff);
