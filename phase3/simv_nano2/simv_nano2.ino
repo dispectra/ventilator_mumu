@@ -1,6 +1,9 @@
 // Low-Cost Ventilator
 // ----
 // Code including serial comm with mega
+// Cek2an di sela2 step dihapus 
+// inhale dibikin constant speed
+// ehale max speed
 
 #include <SoftwareSerial.h>
 
@@ -32,7 +35,7 @@ SoftwareSerial SerialM(11,12); //RX, TX
 #define limitSwitchEx 6
 #define calManMaju 7
 #define calManMundur 8
-#define LEDCallibrate 13
+//#define LEDCallibrate 13
 
 bool callibrated = false;
 bool updated = false;
@@ -61,9 +64,7 @@ void setup() {
   Serial.begin(115200);
   SerialM.begin(38400);
 
-  slopeFactor = 0.5;
-  delayInhale = 300; // dalam microseconds
-  delayExhale = delayInhale; // dalam microseconds
+  slopeFactor = 0.15; 
   initDelay = 600;
 
   //////////// BREATHING PART //////////////////
@@ -75,9 +76,9 @@ void setup() {
   pinMode(calManMaju, INPUT_PULLUP);
   pinMode(calManMundur, INPUT_PULLUP);
 
-//  Serial.println("==> CALLIBRATING"); Serial.flush();
-//  Callibrate();
-//  Serial.println("==> CALLIBRATION DONE"); Serial.flush();
+  Serial.println("==> CALLIBRATING"); Serial.flush();
+  Callibrate();
+  Serial.println("==> CALLIBRATION DONE"); Serial.flush();
 }
 
 void loop() {
@@ -88,11 +89,13 @@ void loop() {
 
   if (statusOn) {
 //      Serial.println(Vtidal);
-      stepTidal = cekTidal(Vtidal);
+      stepTidal = round(cekTidal(Vtidal));
       timeBreath = (60000 / float(RR)) * 1000;
       timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
       timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
-
+      delayInhale = float(timeInhale) / float(stepTidal) / 2; // dalam microseconds
+      delayExhale = 300; // dalam microseconds
+      
       if(stateNow == 0){
         Serial.println("==> STATUS: ON");
       }
@@ -175,9 +178,9 @@ void loop() {
         delayMicroseconds(2000);
     }
 //
-//    if (!callibrated) {
-//      Callibrate();
-//    }
+    if (!callibrated) {
+      Callibrate();
+    }
   }
 }
 
@@ -186,8 +189,8 @@ void loop() {
 void Inhale() {
   // 0. Init Variables
 //  unsigned long now = micros();
-  float delayInhale2 = initDelay;
-  int stepCount = 0;
+  float delayInhale2 = delayInhale;
+//  int stepCount = 0;
 
   // 1. Set Arah
   digitalWrite(dirPin, dirInhale);
@@ -197,12 +200,12 @@ void Inhale() {
   // 2. Set Gerakan Stepper
   for(int i = 0; i < stepTidal; i++) { // UNTUK DIPERIKSA
 //    unsigned long now2 = micros();
-    if(i < slopeFactor*stepTidal){
-      delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
-    if(i>(1-slopeFactor)*stepTidal){
-      delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
+//    if(i < slopeFactor*stepTidal){
+//      delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
+//    }
+//    if(i>(1-slopeFactor)*stepTidal){
+//      delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
+//    }
 
     if(digitalRead(limitSwitchIn)){
       digitalWrite(stepPin, HIGH);
@@ -219,18 +222,18 @@ void Inhale() {
     }
 
     delayMicroseconds(delayInhale2);
+//
+//    if(checkPressure()){
+//      break;
+//    }
 
-    if(checkPressure()){
-      break;
-    }
-
-    stepCount += 1;
+//    stepCount += 1;
 
 //    Serial.println("TIME 1 STEP IDEAL = " + String(2*delayInhale2));
 //    Serial.println("TIME 1 STEP = " + String(micros()-now2));
   }
 
-  Serial.println(stepCount);
+//  Serial.println(stepCount);
 
   // 3. Tampil Waktu
   Serial.print("Waktu Inhale = ");
@@ -240,8 +243,8 @@ void Inhale() {
 //-- Sekuens Inhale ====================================================================
 int Inhale2() {
   // 0. Init Variables
-  float delayInhale2 = initDelay;
-  int stepCount = 0;
+  float delayInhale2 = delayInhale;
+  int stepCount = stepTidal;
 
   // 1. Set Arah
   digitalWrite(dirPin, dirInhale);
@@ -250,12 +253,12 @@ int Inhale2() {
   unsigned long now = micros();
   // 2. Set Gerakan Stepper
   for(int i = 0; i < stepTidal; i++) {
-    if(i < slopeFactor*stepTidal){
-      delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
-    if(i>(1-slopeFactor)*stepTidal){
-      delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
+//    if(i < slopeFactor*stepTidal){
+//      delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
+//    }
+//    if(i>(1-slopeFactor)*stepTidal){
+//      delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
+//    }
 
     if(digitalRead(limitSwitchIn)){
       digitalWrite(stepPin, HIGH);
@@ -272,15 +275,15 @@ int Inhale2() {
     }
 
     delayMicroseconds(delayInhale2);
-
-    if(checkVolumePres()){
-      break;
-    }
+//
+//    if(checkVolumePres()){
+//      break;
+//    }
     
-    stepCount += 1;
+//    stepCount += 1;
   }
 
-  Serial.println(stepCount);
+//  Serial.println(stepCount);
 
   // 3. Tampil Waktu
   Serial.print("Waktu Inhale = ");
@@ -322,10 +325,10 @@ void Exhale(int stepTidalE) {
     }
 
     delayMicroseconds(delayExhale2);
-    
-    if(checkInhale()){
-      spontaneousPrev = true;
-    }
+//    
+//    if(checkInhale()){
+//      spontaneousPrev = true;
+//    }
   }
 
   // 3. Tampil Waktu
@@ -337,7 +340,7 @@ void Exhale(int stepTidalE) {
 //-- FUNCTION PLUS PLUS =============================================
 //-- Fungsi Kalibrasi
 void Callibrate() {
-  digitalWrite(LEDCallibrate, HIGH);
+//  digitalWrite(LEDCallibrate, HIGH);
   digitalWrite(dirPin, !dirInhale);
   unsigned long now = millis();
   while(digitalRead(limitSwitchEx)){
@@ -348,13 +351,13 @@ void Callibrate() {
     delayMicroseconds(1000);
   }
   callibrated = true;
-  digitalWrite(LEDCallibrate, LOW);
+//  digitalWrite(LEDCallibrate, LOW);
 }
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
-  float lookup_vol[] = {500, 600, 700, 800};
-  float lookup_step[] = {480, 550, 660, 950};
+  float lookup_vol[] = {219, 293, 363, 435, 507, 584, 669, 751, 833, 885, 921};
+  float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950};
 
   float stepTidal = 0;
   int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);

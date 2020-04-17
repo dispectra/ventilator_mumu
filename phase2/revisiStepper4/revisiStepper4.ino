@@ -21,20 +21,21 @@
 #define limitSwitchEx 6
 
 // Slope2an
-#define initDelay 470
+//#define initDelay 750
+#define endDelay 750
 
 //-- Input HMI ======================================================================
 // volTidal = Volume Tidal (cc)
 // IRat dan ERat = IERatio ( I : E )
 // RR = Respiration Rate (x per minute)
-float volTidal = 1250;
+float volTidal = 800;
 int IRat = 1;
-int ERat = 3;
-int RR = 15;
+int ERat = 2;
+int RR = 14;
 
 //-- GLOBAL VARIABLEs ===============================================================
 unsigned long stepTidal, delayInhale, delayExhale, timeInEx;
-float timeInhale, timeExhale, IERatio, timeBreath, slopeFactor;
+float timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay;
 
 //-- SETUP ==========================================================================
 void setup() {
@@ -43,13 +44,13 @@ void setup() {
   pinMode(dirPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   
-  slopeFactor = 0.5;
+  slopeFactor = 0.15;
   stepTidal = cekTidal(volTidal);
   timeBreath = (60000 / float(RR)) * 1000;
   timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
   timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
-  delayInhale = 470; // dalam microseconds
-  delayExhale = delayInhale; // dalam microseconds
+  delayInhale = float(timeInhale) / float(stepTidal) / 2; //endDelay; // dalam microseconds
+  delayExhale = 300; //delayInhale; // dalam microseconds
   
 //  timeInEx = stepTidal * delayInhale/; 
 
@@ -130,8 +131,8 @@ void loop() {
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
-  float lookup_vol[] = {500, 750, 1000, 1250};
-  float lookup_step[] = {480, 550, 660, 950};
+  float lookup_vol[] = {500, 600, 700, 800};
+  float lookup_step[] = {480, 550, 660, 450};
 
   float stepTidal = 0;
   int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);
@@ -189,6 +190,7 @@ float cariMax(float list[], int arraySize){
 //-- Sekuens Inhale ====================================================================
 void Inhale() {
   // 0. Hitung Waktu
+  initDelay = delayInhale;
   unsigned long now = micros();
   float delayInhale2 = initDelay;
   // 1. Set Arah
@@ -225,6 +227,7 @@ void Inhale() {
 //-- Sekuens Exhale ====================================================================
 void Exhale() {
   // 0. Hitung Waktu
+  initDelay = 600;
   unsigned long now = micros();
   float delayExhale2 = initDelay;
   
