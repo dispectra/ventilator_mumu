@@ -7,6 +7,8 @@
 //== LIBRARIES =============================================
 #include <SoftwareSerial.h>
 #include <Nextion.h>
+#include <Wire.h>
+#include <Adafruit_ADS1015.h>
 
 
 //== GLOBAL VARIABLES ======================================
@@ -32,6 +34,11 @@ uint32_t Ox = 20;
 int CurrentPage;
 int mode = 0;
 
+////update///
+NexNumber n7 = NexNumber(1, 19, "n7");
+NexNumber n8 = NexNumber(1, 20, "n8");
+NexNumber n9 = NexNumber(1, 21, "n9");
+/////////////
 NexDSButton bt0 = NexDSButton(1, 3, "bt0");
 NexButton b7 = NexButton(4, 20, "b7");
 NexButton b8 = NexButton(4, 19, "b8");
@@ -49,8 +56,11 @@ NexPage page2 = NexPage(2, 0, "page2");
 NexPage page4 = NexPage(4, 0, "page4");
 NexPage page6 = NexPage(6, 0, "page6");
 NexTouch *nex_listen_list[] = {
+  ///Update///
+  &n7,&n8,&n9,
   &b7,&b8,&b9,&b10,&b11,&b12,&b13,&b14,&b15,&b16,
   &bt0, &page0, &page1, &page2, &page4, &page6, NULL
+  ///Update///
 };
 
   // Pressure and Flow variables
@@ -63,11 +73,19 @@ int flow_raw;
 float pressure_float;
 float flow_float;
 
+// KE-25 Oxygen Sensor + ADS1115 ADC board
+Adafruit_ADS1115 ads;
+float scalefactor = 0.1875F;
+float volts = 0.0;
+int16_t oxygen_raw = 0;
+float oxygen_float;
+
 //== MAIN SETUP ============================================
 void setup() {
   Serial.begin(115200); // for debugging
   Serial1.begin(38400); // from/to Nano
   Serial2.begin(9600);  // from/to Nextion
+  ads.begin();          // from/to ADS115 + Oxygen
 
   nexInit();
   bt0.attachPush(bt0PushCallback, &bt0);
@@ -87,7 +105,6 @@ void setup() {
   page4.attachPush(page4PushCallback, &page4);
   page6.attachPush(page6PushCallback, &page6);
   //  dbSerialPrintln(CurrentPage);
-  delay(500);
 }
 
 
@@ -115,6 +132,7 @@ void loop() {
     //    dbSerialPrintln(mode);
     flowUpdate();
     pressureUpdate();
+    oxygenUpdate();
     if (CurrentPage != 1) {
       break;
     }
@@ -127,6 +145,7 @@ void loop() {
     //    dbSerialPrintln(mode);
     flowUpdate();
     pressureUpdate();
+    oxygenUpdate();
     if (CurrentPage != 1) {
       break;
     }
@@ -338,24 +357,38 @@ void flowUpdate() {
   flow_raw = analogRead(PIN_MPX5010DP_flow);
 
   // Conversion to cmH2O based on datasheet
-  flow_float = calcDatasheetPressure(flow_raw);
-  
-  // Calibration using raw value (already square-rooted) as the formula of differential pressure -> flow
-  int adcA = 111; float flowA = 11; //Measurement #1
-  int adcB = 222; float flowB = 22; //Measurement #2
-  flow_float = mapFloat(flow_raw, float(sqrt(adcA)), float(sqrt(adcB)), flowA, flowB);
+  flow_float = calcDatasheetPressure(flow_raw+41);
 
-  // Convert value from DP (cmH20) to flow (LPM | litre per minute)
+  // Convert value from DP (cmH20) to flow (LPM | litre per minute) (ver. mas husnul)
   flow_float = sqrt((flow_float * 2 * 98.06) / 123000) * 0.064 * 60 * 1000;
   flow_float = (flow_float - 100) * 1.6;
+
+//  // Calibration using raw value (already square-rooted) as the formula of differential pressure -> flow
+//  int adcA = 111; float flowA = 11; //Measurement #1
+//  int adcB = 222; float flowB = 22; //Measurement #2
+//  flow_float = mapFloat(flow_raw, float(sqrt(adcA)), float(sqrt(adcB)), flowA, flowB);
+
+  // Convert to Nextion waveform graph scale
+//  flow_int8 = map(int(flow_float),-140,2500,0,255);
+  flow_int8 = map(int(flow_float),-140,500,0,255);
   
-  // Update to Nextion Waveform Graph
-  flow_int8 = int(flow_float);
+  // Update to Nextion waveform graph
   Serial2.print("add 2,0,");
-  Serial2.print(flow_int8);
+  Serial2.print(flow_int8 - 200);
   Serial2.write(0xff);
   Serial2.write(0xff);
   Serial2.write(0xff);
+
+  ///update///
+  Serial2.print("n8.val=");
+  Serial2.print(int(flow_float - 380));
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  ////////////
+
+  Serial.print(flow_raw); Serial.print(",");
+  Serial.print(flow_int8); Serial.print(",");
 }
 
 void pressureUpdate() {
@@ -365,19 +398,50 @@ void pressureUpdate() {
   // Conversion to cmH2O based on datasheet
   pressure_float = calcDatasheetPressure(pressure_raw);
 
-  // Calibration using raw value
-  int adcA = 111; float pressureA = 11; //Measurement #1
-  int adcB = 222; float pressureB = 22; //Measurement #2
-  pressure_float = mapFloat(pressure_raw, adcA, adcB, pressureA, pressureB);
+//  // Calibration using raw value
+//  int adcA = 111; float pressureA = 11; //Measurement #1
+//  int adcB = 222; float pressureB = 22; //Measurement #2
+//  pressure_float = mapFloat(pressure_raw, adcA, adcB, pressureA, pressureB);
 
-  // Convert to Nextion Graph scaling (ver. mas husnul)
-  pressure_float = pressure_float * 100 * 1.062;
-  pressure_int8 = int(pressure_float);
+//  // Convert to Nextion waveform graph scale (ver. mas husnul)
+//  pressure_float = pressure_float * 100 * 1.062;
+//  pressure_int8 = int(pressure_float);
+
+  // Convert to Nextion waveform graph scale
+//  pressure_int8 = map(int(pressure_float), -10, 120, 0, 255);
+  pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
   
-  // Update to Nextion Waveform Graph
+  // Update to Nextion waveform graph
   Serial2.print("add 1,0,");
-  Serial2.print(pressure_int8);
+  Serial2.print(pressure_int8 - 80);
   Serial2.write(0xff);
   Serial2.write(0xff);
   Serial2.write(0xff);
+
+  ///update///
+  Serial2.print("n9.val=");
+  Serial2.print(int(pressure_float));
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  ////////////
+
+  Serial.print(pressure_raw); Serial.print(",");
+  Serial.print(pressure_int8); Serial.println();
+}
+
+void oxygenUpdate() {
+  oxygen_raw = ads.readADC_Differential_0_1(); 
+  volts = (oxygen_raw * scalefactor);
+  oxygen_float = 10*volts/6;
+  int oxygen_int = int(oxygen_float);
+  if (oxygen_int==0) oxygen_int = 100;
+  
+  ///update///
+  Serial2.print("n7.val=");
+  Serial2.print(oxygen_int);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  ////////////
 }
