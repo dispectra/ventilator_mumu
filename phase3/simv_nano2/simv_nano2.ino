@@ -64,8 +64,8 @@ void setup() {
   Serial.begin(115200);
   SerialM.begin(38400);
 
-  slopeFactor = 0.15; 
-  initDelay = 600;
+  slopeFactor = 0.35; 
+  initDelay = 1000;
 
   //////////// BREATHING PART //////////////////
   pinMode(dirPin, OUTPUT);
