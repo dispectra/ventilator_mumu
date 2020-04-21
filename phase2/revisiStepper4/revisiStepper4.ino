@@ -22,13 +22,13 @@
 
 // Slope2an
 //#define initDelay 750
-#define endDelay 750
+#define endDelay 1000
 
 //-- Input HMI ======================================================================
 // volTidal = Volume Tidal (cc)
 // IRat dan ERat = IERatio ( I : E )
 // RR = Respiration Rate (x per minute)
-float volTidal = 800;
+float volTidal = 600;
 int IRat = 1;
 int ERat = 2;
 int RR = 14;
@@ -44,7 +44,7 @@ void setup() {
   pinMode(dirPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   
-  slopeFactor = 0.15;
+  slopeFactor = 0.5;
   stepTidal = cekTidal(volTidal);
   timeBreath = (60000 / float(RR)) * 1000;
   timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
@@ -131,8 +131,8 @@ void loop() {
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
-  float lookup_vol[] = {500, 600, 700, 800};
-  float lookup_step[] = {480, 550, 660, 450};
+  float lookup_vol[] = {219, 293, 363, 435, 507, 584, 669, 751, 833, 885, 921};
+  float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950};
 
   float stepTidal = 0;
   int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);
