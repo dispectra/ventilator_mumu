@@ -1,0 +1,4 @@
+1. Nambah interrupt untuk trigger pembacaan PEEP
+2. Tambah bool readPEEP dan if saat mode 1 untuk membaca PEEP
+3. Tambah variable PIP yang diupdate sesuai nilai max pressure yang masuk
+4. Fungsi PEEPUpdate

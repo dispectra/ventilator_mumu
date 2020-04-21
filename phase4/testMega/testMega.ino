@@ -116,6 +116,7 @@ void readPEEPQ(){
   readPEEP = true;
 }
 
+float pip_value = 0;
 //== MAIN LOOP =============================================
 void loop() {
   update2Nano();
@@ -155,16 +156,16 @@ void loop() {
   }
   while (mode == 1) {
     while(digitalRead(13)){
-      
+
     }
     nexLoop(nex_listen_list);
     //    dbSerialPrintln(mode);
     flowUpdate();
-    pressureUpdate();
+    pressureUpdate1();
     oxygenUpdate();
     if (readPEEP){
-      Serial.println("PEEP PRESSURE ---------------------------------");
-      pressureUpdate();
+      pip_value = 0;
+      PEEPUpdate();
       readPEEP = false;
     }
     if (CurrentPage != 1) {
@@ -257,12 +258,12 @@ void b8PushCallback(void *ptr) {  // Press event for button b8
   IE++;
   if(IE>=60)
   {IE=60;}
-  ERat = IE/10;
+  ERat = float(IE)/10;
   update2Nano();
 }
 
 void b7PushCallback(void *ptr) {  // Press event for button b7
-  IE--; 
+  IE--;
   if(IE==4294967295){IE=0;}
   ERat = IE/10;
   update2Nano();
@@ -273,10 +274,10 @@ void b10PushCallback(void *ptr) {  // Press event for button b10
   if(RR>=60)
   {RR=60;}
   update2Nano();
-} 
+}
 
 void b9PushCallback(void *ptr) {  // Press event for button b9
-  RR--; 
+  RR--;
   if(RR<=10)
   {RR=10;}
   update2Nano();
@@ -287,10 +288,10 @@ void b14PushCallback(void *ptr) {  // Press event for button b14
   if(PEEP>=80)
   {PEEP=80;}
   update2Nano();
-} 
+}
 
 void b13PushCallback(void *ptr) {  // Press event for button b13
-  PEEP--; 
+  PEEP--;
   if(PEEP==4294967295)
   {PEEP=0;}
   update2Nano();
@@ -301,10 +302,10 @@ void b16PushCallback(void *ptr) {  // Press event for button b16
   if(Vti>=800)
   {Vti=800;}
   update2Nano();
-} 
+}
 
 void b15PushCallback(void *ptr) {  // Press event for button b15
-  Vti=Vti-10; 
+  Vti=Vti-10;
   if(Vti<=100)
   {Vti=100;}
   update2Nano();
@@ -315,10 +316,10 @@ void b12PushCallback(void *ptr) {  // Press event for button b12
   if(Ox>=100)
   {Ox=100;}
   Serial.println(Ox);
-} 
+}
 
 void b11PushCallback(void *ptr) {  // Press event for button b11
-  Ox--; 
+  Ox--;
   if(Ox<=20)
   {Ox=20;}
   Serial.println(Ox);
@@ -358,7 +359,7 @@ void page6PushCallback(void *ptr) {
 
 //-- MPX5010DP pressure sensor ----------------
 float calcDatasheetPressure(int x_adc) {
-  /* Function to return differential pressure value (in cmH2O) 
+  /* Function to return differential pressure value (in cmH2O)
    * from raw ADC value by
    * following typical characteristic in the datasheet
    * ( http://contrails.free.fr/temp/MPX5010.pdf )
@@ -392,7 +393,7 @@ void flowUpdate() {
   // Convert to Nextion waveform graph scale
 //  flow_int8 = map(int(flow_float),-140,2500,0,255);
   flow_int8 = map(int(flow_float),-140,500,0,255);
-  
+
   // Update to Nextion waveform graph
   Serial2.print("add 2,0,");
   Serial2.print(flow_int8 - 200);
@@ -431,7 +432,7 @@ void pressureUpdate() {
   // Convert to Nextion waveform graph scale
 //  pressure_int8 = map(int(pressure_float), -10, 120, 0, 255);
   pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
-  
+
   // Update to Nextion waveform graph
   Serial2.print("add 1,0,");
   Serial2.print(pressure_int8 - 80);
@@ -451,13 +452,73 @@ void pressureUpdate() {
   Serial.print(pressure_int8); Serial.println();
 }
 
+void pressureUpdate1() {
+  // Read sensor output
+  pressure_raw = analogRead(PIN_MPX5010DP_pressure);
+
+  // Conversion to cmH2O based on datasheet
+  pressure_float = calcDatasheetPressure(pressure_raw);
+
+  if(pressure_float>pip_value){
+    pip_value = pressure_float;
+  }
+//  // Calibration using raw value
+//  int adcA = 111; float pressureA = 11; //Measurement #1
+//  int adcB = 222; float pressureB = 22; //Measurement #2
+//  pressure_float = mapFloat(pressure_raw, adcA, adcB, pressureA, pressureB);
+
+//  // Convert to Nextion waveform graph scale (ver. mas husnul)
+//  pressure_float = pressure_float * 100 * 1.062;
+//  pressure_int8 = int(pressure_float);
+
+  // Convert to Nextion waveform graph scale
+//  pressure_int8 = map(int(pressure_float), -10, 120, 0, 255);
+  pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
+
+  // Update to Nextion waveform graph
+  Serial2.print("add 1,0,");
+  Serial2.print(pressure_int8 - 80);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+
+  ///update///
+  Serial2.print("n9.val=");
+  Serial2.print(int(pip_value));
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  ////////////
+
+  Serial.print(pressure_raw); Serial.print(",");
+  Serial.print(pressure_int8); Serial.println();
+}
+
+void PEEPUpdate() {
+  // Read sensor output
+  pressure_raw = analogRead(PIN_MPX5010DP_pressure);
+
+  // Conversion to cmH2O based on datasheet
+  pressure_float = calcDatasheetPressure(pressure_raw);
+
+  // ///update///
+  // Serial2.print("n10.val=");
+  // Serial2.print(int(pressure_float));
+  // Serial2.write(0xff);
+  // Serial2.write(0xff);
+  // Serial2.write(0xff);
+
+  Serial.print("PEEP VALUE : ");
+  Serial.println(pressure_float);
+}
+
 void oxygenUpdate() {
-  oxygen_raw = ads.readADC_Differential_0_1(); 
+  oxygen_raw = ads.readADC_Differential_0_1();
   volts = (oxygen_raw * scalefactor);
   oxygen_float = 10*volts/6;
   int oxygen_int = int(oxygen_float);
   if (oxygen_int==0) oxygen_int = 100;
-  
+
   ///update///
   Serial2.print("n7.val=");
   Serial2.print(oxygen_int);
