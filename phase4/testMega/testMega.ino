@@ -90,7 +90,7 @@ void setup() {
   ads.begin();          // from/to ADS115 + Oxygen
 
   pinMode(3, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(3), readPEEPQ, FALLING);
+//  attachInterrupt(digitalPinToInterrupt(3), readPEEPQ, FALLING);
 
   nexInit();
   bt0.attachPush(bt0PushCallback, &bt0);

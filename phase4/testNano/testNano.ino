@@ -153,7 +153,7 @@ void loop() {
 
 
       while((micros()-now) < timeBreath){
-        delayMicroseconds(1);
+//        delayMicroseconds(1);/
         if(checkInhale()){
           spontaneousPrev = true;
         }  
