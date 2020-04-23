@@ -1,0 +1,6 @@
+1. int(pressure_float) diganti round
+2. Display pakai pressure_float2 <-- Exponential Filter
+3. Interrupt PEEP OK
+4. Pers linear sensor udah masuk
+5. Kode ambyar berntakan
+6. Ganti File NexHardware.cpp, fungsi nexInit, ganti baud rate jadi 115200

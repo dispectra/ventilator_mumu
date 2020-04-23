@@ -62,7 +62,7 @@ float timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay;
 //-- SETUP =========================================================================
 void setup() {
   Serial.begin(115200);
-  SerialM.begin(38400);
+  SerialM.begin(57600);
 
   slopeFactor = 0.35; 
   initDelay = 1000;
@@ -103,7 +103,7 @@ void loop() {
       timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
       delayInhale = float(timeInhale) / float(stepTidal) / 2; // dalam microseconds
       delayExhale = 300; // dalam microseconds
-      
+      readPEEP(0);
       
 
       if(spontaneousPrev){ stateNow = 2; Serial.println("==> STATE 2");}
@@ -127,7 +127,7 @@ void loop() {
 
       unsigned long now = micros();
 
-      readPEEP(0);
+      
       
       if(stateNow == 1){
         Serial.println("==> INHALE SEQUENCE");
@@ -379,7 +379,7 @@ void Callibrate() {
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
-  float lookup_vol[] = {219, 293, 363, 435, 507, 584, 669, 751, 833, 885, 921};
+  float lookup_vol[] = {223.75, 289.53, 355.72, 410.89, 475.67, 550.83, 606.44, 653.11, 704.17, 748.33, 771.95};
   float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950};
 
   float stepTidal = 0;
@@ -555,8 +555,8 @@ void readPEEP(bool on){
 
 void readIPP(bool on){
   if(on){
-    digitalWrite(pinIPP, LOW);
+///    digitalWrite(pinIPP, LOW);
   } else {
-    digitalWrite(pinIPP, HIGH);
+//    digitalWrite(pinIPP, HIGH);
   }
 }
