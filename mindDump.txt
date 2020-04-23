@@ -20,3 +20,6 @@ bool updated bisa diganti return None (ga usah retain)
 Sekarang delay dikurangin, perlu dicek apakah torsi masih ngangkat
 
 Bikin rumus itung ramp meskipun waktu inhale berubah2
+
+Revisi stepper 5 --> Dikasih slope untuk speed (cepat to lambat)
+Revisi stepper 5 ~ Revisi stepper 4, but i reckon rev 4 had better timing

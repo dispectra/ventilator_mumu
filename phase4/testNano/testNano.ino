@@ -134,9 +134,12 @@ void loop() {
         int stepTidal2 = Inhale();
 
         while((micros()-now) < timeInhale){delayMicroseconds(1);}
+        readIPP(1);
+        
         timeInhaleReal = micros()-now;
         Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
 
+        readIPP(0);
         Serial.println("==> EXHALE SEQUENCE");
         Exhale(stepTidal2);
       } else if(stateNow == 2){
@@ -165,6 +168,7 @@ void loop() {
 
   } else {
     readPEEP(0);
+    readIPP(0);
     if(stateNow !=0){
       Serial.println("==> STATUS: OFF");Serial.flush();
       stateNow = 0;
@@ -546,5 +550,13 @@ void readPEEP(bool on){
     digitalWrite(2, LOW);
   }else {
     digitalWrite(2, HIGH);
+  }
+}
+
+void readIPP(bool on){
+  if(on){
+    digitalWrite(pinIPP, LOW);
+  } else {
+    digitalWrite(pinIPP, HIGH);
   }
 }
