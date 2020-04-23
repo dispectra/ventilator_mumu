@@ -13,7 +13,7 @@
 //== GLOBAL VARIABLES ======================================
 
 // Transmitted variables to Nano
-//boolean state = 1;
+//boolean state = 1;p
 boolean warningVolume = 0;
 boolean warningPressure = 0;
 //int Vti = 500;
@@ -121,6 +121,7 @@ void readPEEPQ(){
 }
 
 float pip_value = 0;
+float last_pip = 0;
 //== MAIN LOOP =============================================
 void loop() {
   update2Nano();
@@ -168,10 +169,11 @@ void loop() {
 //    while(millis()-now < 5) {
 //    if(digitalRead(3) == HIGH){
       if (readPEEP){
-        pip_value = 0;
         Serial.println("ASDSF");
         digitalWrite(9, HIGH);
+        
         PEEPUpdate();
+        pip_value = 0;
         readPEEP = false;
       }
        nexLoop(nex_listen_list);
@@ -458,11 +460,11 @@ void pressureUpdate() {
   Serial2.write(0xff);
  
   ///update///
-  Serial2.print("n9.val=");
-  Serial2.print(round(pressure_float));
-  Serial2.write(0xff);
-  Serial2.write(0xff);
-  Serial2.write(0xff);
+//  Serial2.print("n9.val=");
+//  Serial2.print(round(pressure_float));
+//  Serial2.write(0xff);
+//  Serial2.write(0xff);
+//  Serial2.write(0xff);
  //  
   ////////////
 
@@ -505,11 +507,12 @@ void pressureUpdate1() {
   Serial2.write(0xff);
  
   ///update///
-  Serial2.print("n9.val=");
-  Serial2.print(round(pip_value));
-  Serial2.write(0xff);
-  Serial2.write(0xff);
-  Serial2.write(0xff);
+//  Serial2.print("n9.val=");
+//  Serial2.print(round(last_pip));
+//  Serial2.write(0xff);
+//  Serial2.write(0xff);
+//  Serial2.write(0xff);
+//  last_pip = pip_value;
  //  
   ////////////
 
@@ -534,6 +537,13 @@ void PEEPUpdate() {
    Serial2.write(0xff);
    Serial2.write(0xff);
 
+  Serial2.print("n9.val=");
+  Serial2.print(round(last_pip));
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  Serial2.write(0xff);
+  last_pip = pip_value;
+  
   Serial.print("PEEP VALUE : ");
   Serial.println(pressure_float);
 }
