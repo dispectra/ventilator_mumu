@@ -23,3 +23,7 @@ Bikin rumus itung ramp meskipun waktu inhale berubah2
 
 Revisi stepper 5 --> Dikasih slope untuk speed (cepat to lambat)
 Revisi stepper 5 ~ Revisi stepper 4, but i reckon rev 4 had better timing
+
+
+WarnVol dan warnPres pakai interrupt
+TriggerInhale di retain di mega sampai interrupt baca PEEP
