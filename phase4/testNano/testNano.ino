@@ -1,7 +1,7 @@
 // Low-Cost Ventilator
 // ----
 // Code including serial comm with mega
-// Cek2an di sela2 step dihapus 
+// Cek2an di sela2 step dihapus
 // inhale dibikin constant speed
 // ehale max speed
 
@@ -64,8 +64,8 @@ void setup() {
   Serial.begin(115200);
   SerialM.begin(57600);
 
-  slopeFactor = 0.35; 
-  initDelay = 1000;
+  slopeFactor = 0.35;
+  initDelay = 1200;
 
   //////////// BREATHING PART //////////////////
   pinMode(dirPin, OUTPUT);
@@ -91,7 +91,7 @@ void loop() {
 
   if (statusOn) {
 //      Serial.println(Vtidal);
-      
+
       if(stateNow == 0){
         Serial.println("==> STATUS: ON");
       } else {
@@ -102,9 +102,9 @@ void loop() {
       timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
       timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
       delayInhale = float(timeInhale) / float(stepTidal) / 2; // dalam microseconds
-      delayExhale = 300; // dalam microseconds
+      delayExhale = 600; // dalam microseconds
       readPEEP(0);
-      
+
 
       if(spontaneousPrev){ stateNow = 2; Serial.println("==> STATE 2");}
       else{stateNow = 1;Serial.println("==> STATE 1");}
@@ -127,15 +127,13 @@ void loop() {
 
       unsigned long now = micros();
 
-      
-      
       if(stateNow == 1){
         Serial.println("==> INHALE SEQUENCE");
         int stepTidal2 = Inhale();
 
         while((micros()-now) < timeInhale){delayMicroseconds(1);}
         readIPP(1);
-        
+
         timeInhaleReal = micros()-now;
         Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
 
@@ -156,10 +154,10 @@ void loop() {
 
 
       while((micros()-now) < timeBreath){
-//        delayMicroseconds(1);/
+//        delayMicroseconds(1);
         if(checkInhale()){
           spontaneousPrev = true;
-        }  
+        }
       }
       Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal));
 
@@ -175,7 +173,7 @@ void loop() {
     }
 
     if(digitalRead(7) == LOW){
-      
+
         digitalWrite(dirPin, LOW);
         if(digitalRead(limitSwitchIn)){
           Serial.println("Cal In");
@@ -187,8 +185,8 @@ void loop() {
         }
         delayMicroseconds(2000);
     } else if(digitalRead(8) == LOW){
-      
-        digitalWrite(dirPin, HIGH); 
+
+        digitalWrite(dirPin, HIGH);
         if(digitalRead(limitSwitchEx)){
           Serial.println("Cal Out");
           digitalWrite(stepPin, HIGH);
@@ -302,7 +300,7 @@ int Inhale2() {
     if(checkVolumePres()){
       break;
     }
-    
+
     stepCount += 1;
   }
 
@@ -348,10 +346,17 @@ void Exhale(int stepTidalE) {
     }
 
     delayMicroseconds(delayExhale2);
-//    
+//
     if(checkInhale()){
       spontaneousPrev = true;
     }
+  }
+
+  while(digitalRead(limitSwitchEx)){
+    digitalWrite(stepPin,HIGH);
+    delayMicroseconds(1000);
+    digitalWrite(stepPin,LOW);
+    delayMicroseconds(1000)
   }
 
   // 3. Tampil Waktu
