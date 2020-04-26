@@ -367,7 +367,7 @@ void Exhale(int stepTidalE) {
     }
   }
 
-  while(digitalRead(limitSwitchEx)){
+  while(digitalRead(limitSwitchEx) && micros() - now < 1000000){
     digitalWrite(stepPin,HIGH);
     delayMicroseconds(1000);
     digitalWrite(stepPin,LOW);
