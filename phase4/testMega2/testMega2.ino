@@ -530,7 +530,7 @@ void PEEPUpdate() {
 	Serial2.write(0xff);
 	Serial2.write(0xff);
 
-	Serial2.print("n12.val=");
+	Serial2.print("n10.val=");
 	Serial2.print(round(ipp_value));
 	Serial2.write(0xff);
 	Serial2.write(0xff);

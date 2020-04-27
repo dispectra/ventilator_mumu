@@ -160,9 +160,12 @@ void loop() {
 			int stepTidal2 = Inhale2();
 
 			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
+      readIPP(1);
+
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
 
+      readIPP(0);
 			Serial.println("==> EXHALE SEQUENCE");
 			Exhale(stepTidal2);
 		}
