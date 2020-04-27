@@ -42,7 +42,7 @@ SoftwareSerial SerialM(11,12); //RX, TX
 
 #define pinWarnVol 2 //31
 #define pinWarnPres 3 //30
-#define pinInhaleDetect 13 //29
+#define pinInhaleDetect A2 //29
 
 bool callibrated = false;
 bool updated = false;
@@ -85,13 +85,14 @@ void setup() {
 
 	pinMode(calManMaju, INPUT_PULLUP);
 	pinMode(calManMundur, INPUT_PULLUP);
+  pinMode(pinInhaleDetect, INPUT_PULLUP);
 
 	pinMode(pinWarnVol, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(pinWarnVol), warnVolQ, FALLING);
 	pinMode(pinWarnPres, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(pinWarnPres), warnPresQ, FALLING);
 
-	pinMode(pinInhaleDetect, INPUT_PULLUP)
+	
 
 	Serial.println("==> CALLIBRATING"); Serial.flush();
 	Callibrate();
@@ -372,11 +373,11 @@ void Exhale(int stepTidalE) {
 		}
 	}
 
-	while(digitalRead(limitSwitchEx) && micros() - now < 1000000) {
+	while(digitalRead(limitSwitchEx) && micros() - now < 2000000) {
 		digitalWrite(stepPin,HIGH);
 		delayMicroseconds(1000);
 		digitalWrite(stepPin,LOW);
-		delayMicroseconds(1000)
+		delayMicroseconds(1000);
 	}
 
 	// 3. Tampil Waktu
@@ -526,7 +527,7 @@ String listeningMega(){
 	lastData = seriesData;
 
 	//!! Dummy Data !!
-//  seriesData = "<0,0,0,1250,2,14,1>";
+  seriesData = "<1,0,0,350,2,14,0>";
 
 //  String seriesData2 = ;
 
@@ -535,15 +536,18 @@ String listeningMega(){
 
 bool checkInhale(){
 	triggerInhale = !digitalRead(pinInhaleDetect);
+//  Serial.println(triggerInhale);
 	return triggerInhale;
 }
 
 void warnVolQ(){
 	warnVol = true;
+// Serial.println("WARNING VOLUME !!!!!!!!!!!!!!!!!!!!!!");
 }
 
 void warnPresQ(){
 	warnPres = true;
+//  Serial.println("WARNING PRESSURE !!!!!!!!!!!!!!!!!!!!!!");
 }
 
 bool checkPressure(){
