@@ -4,7 +4,7 @@
 // Cek2an di sela2 step dihapus
 // inhale dibikin constant speed
 // ehale max speed
-
+// testNano3, warnPres warnVol without interrupt
 #include <SoftwareSerial.h>
 
 SoftwareSerial SerialM(11,12); //RX, TX
@@ -28,21 +28,21 @@ SoftwareSerial SerialM(11,12); //RX, TX
 #define dirInhale LOW
 
 //-- PIN FISIK =======================================================================
-#define enaPin 10
+#define enaPin 9
 #define dirPin 4
-#define stepPin 9
+#define stepPin 10
 #define limitSwitchIn 5
 #define limitSwitchEx 6
 #define calManMaju 7
 #define calManMundur 8
 //#define LEDCallibrate 13
 
-#define pinPEEP A1
-#define pinIPP A0
+#define pinPEEP A0
+#define pinIPP A1
 
-#define pinWarnVol 2 //31
-#define pinWarnPres 3 //30
-#define pinInhaleDetect 13 //29
+#define pinWarnVol 2
+#define pinWarnPres 3
+#define pinInhaleDetect 13
 
 bool callibrated = false;
 bool updated = false;
@@ -87,9 +87,9 @@ void setup() {
 	pinMode(calManMundur, INPUT_PULLUP);
 
 	pinMode(pinWarnVol, INPUT_PULLUP);
-	attachInterrupt(digitalPinToInterrupt(pinWarnVol), warnVolQ, FALLING);
+	// attachInterrupt(digitalPinToInterrupt(pinWarnVol), warnVolQ, FALLING);
 	pinMode(pinWarnPres, INPUT_PULLUP);
-	attachInterrupt(digitalPinToInterrupt(pinWarnPres), warnPresQ, FALLING);
+	// attachInterrupt(digitalPinToInterrupt(pinWarnPres), warnPresQ, FALLING);
 
 	pinMode(pinInhaleDetect, INPUT_PULLUP)
 
@@ -544,14 +544,18 @@ void warnPresQ(){
 }
 
 bool checkPressure(){
+  if(digitalRead(pinWarnPres) == LOW){warnPresQ();};
 	return warnPres;
 }
 
 bool checkVolume(){
+  if(digitalRead(pinWarnVol) == LOW){warnVolQ();};
 	return warnVol;
 }
 
 bool checkVolumePres(){
+  if(digitalRead(pinWarnPres) == LOW){warnPresQ();};
+  if(digitalRead(pinWarnVol) == LOW){warnVolQ();};
 	return warnVol || warnPres;
 }
 

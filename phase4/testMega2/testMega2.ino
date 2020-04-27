@@ -129,7 +129,7 @@ void readIPPQ(){
 float pip_value = 0;
 float ipp_value = 0;
 bool exhaleStage = false;
-#define triggerInhalePin 18
+#define triggerInhalePin 31
 
 //== MAIN LOOP =============================================
 void loop() {
@@ -165,7 +165,7 @@ void loop() {
 		}
 	}
 	while (mode == 1) {
-		if (readPEEP) {
+		if(readPEEP){
 			PEEPUpdate();
 			pip_value = 0;
 			readPEEP = false;
