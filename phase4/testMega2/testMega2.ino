@@ -13,13 +13,15 @@
 //== GLOBAL VARIABLES ======================================
 
 // Transmitted variables to Nano
-//boolean state = 1;p
+//boolean state = 1;
 boolean warningVolume = 0;
 boolean warningPressure = 0;
 //int Vti = 500;
 float ERat = 2;
 //int RR = 12;
 boolean triggerInhale = 0;
+#define warningVolume_PIN 31
+#define warningPressure_PIN 30
 
 // Nextion variables
 uint32_t state = 0;
@@ -86,6 +88,8 @@ float oxygen_float;
 bool readPEEP = false;
 bool readIPP = false;
 
+double volumeAcc = 0;
+
 //== MAIN SETUP ============================================
 void setup() {
 	Serial.begin(115200);   // for debugging
@@ -143,7 +147,7 @@ void loop() {
 		mode = 1;
 	}
 	if (CurrentPage == 2) {
-		mode = 2;
+		mode = 2;     // page 2
 	}
 	if (CurrentPage == 4) {
 		mode = 3;
@@ -151,7 +155,7 @@ void loop() {
 	if (CurrentPage == 6) {
 		mode = 4;
 	}
-	while (mode == 0) {
+	while (mode == 0) {     // page 1 tapi nggak nyala/stop
 		nexLoop(nex_listen_list);
 		//dbSerialPrintln(mode);
 		flowUpdate();
@@ -164,13 +168,14 @@ void loop() {
 			break;
 		}
 	}
-	while (mode == 1) {
+	while (mode == 1) {   // page 1 tapi nyala
 		if(readPEEP){
 			PEEPUpdate();
 			pip_value = 0;
 			readPEEP = false;
 			digitalWrite(triggerInhalePin, HIGH); //reset trigger inhale
 			exhaleStage = false;
+      volumeAcc = 0;
 		}
 		if (readIPP) {
 			IPPUpdate();
@@ -181,12 +186,32 @@ void loop() {
 			if(fighting()){
 				digitalWrite(triggerInhalePin,LOW);
 			}
+		} else {  //when exhaleStage == false, or in other word, between PEEP to IPP, or in simple, when inhalation
+    
+      calcVolumeAcc();  // calculate accumulated inhale volume 
+      
+      if (volumeAcc > Vti) {        // warning volume to nano through digital pin
+        digitalWrite(warningVolume_PIN,LOW);
+        delay(1);
+        digitalWrite(warningVolume_PIN,HIGH);
+        setAlarm(1);
+        }
+        
+      if (pressure_float > 35) {    // warning pressure to nano through digital pin
+        digitalWrite(warningPressure_PIN,LOW);
+        delay(1);
+        digitalWrite(warningPressure_PIN,HIGH);
+        setAlarm(2);
+        }
 		}
+   
 		nexLoop(nex_listen_list);
 		//dbSerialPrintln(mode);
+    
 		flowUpdate();
 		pressureUpdate1();
 		oxygenUpdate();
+   
 		if (CurrentPage != 1) {
 			break;
 		}
@@ -194,7 +219,7 @@ void loop() {
 			break;
 		}
 	}
-	while (mode == 3) {
+	while (mode == 3) {   // page 4
 		nexLoop(nex_listen_list);
 //    dbSerialPrintln(mode);
 //    Serial.print(IE);Serial.print("\t");Serial.print(RR);Serial.print("\t");
@@ -204,7 +229,7 @@ void loop() {
 			break;
 		}
 	}
-	while (mode == 4) {
+	while (mode == 4) {   // page ngatur trigger (belum disetel)
 		nexLoop(nex_listen_list);
 //    dbSerialPrintln(mode);
 		if (CurrentPage != 6) {
@@ -573,4 +598,19 @@ bool fighting(){
 	// 	fight = true;
 	// }
 	return fight;
+}
+
+//-- Calculate accumulated volume -----------------------
+void calcVolumeAcc() {
+  const byte dt = 1;
+  volumeAcc = (pressure_float * dt) + volumeAcc;
+}
+
+//-- Send alarm mode to buzzer/alarm microcontroller ----
+void setAlarm(byte alarmOption) {
+  // to buzzer 
+//  digitalWrite(pinA, bitRead(alarmOption, 0));
+//  digitalWrite(pinB, bitRead(alarmOption, 1));
+//  digitalWrite(pinC, bitRead(alarmOption, 2));
+//  digitalWrite(pinD, bitRead(alarmOption, 3));
 }
