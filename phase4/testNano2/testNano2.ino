@@ -373,7 +373,7 @@ void Exhale(int stepTidalE) {
 		}
 	}
 
-	while(digitalRead(limitSwitchEx) && micros() - now < 2000000) {
+	while(digitalRead(limitSwitchEx) && micros() - now < timeExhale + 500000) {
 		digitalWrite(stepPin,HIGH);
 		delayMicroseconds(1000);
 		digitalWrite(stepPin,LOW);
@@ -527,7 +527,7 @@ String listeningMega(){
 	lastData = seriesData;
 
 	//!! Dummy Data !!
-	seriesData = "<1,0,0,350,2,14,0>";
+//	seriesData = "<1,0,0,350,2,14,0>";
 
 //  String seriesData2 = ;
 

@@ -137,6 +137,8 @@ void setup() {
 	page6.attachPush(page6PushCallback, &page6);
 //  dbSerialPrintln(CurrentPage);
 }
+unsigned long dt, now;
+now = 0;
 
 //== MAIN LOOP =============================================
 void loop() {
@@ -172,6 +174,8 @@ void loop() {
 		}
 	}
 	while (mode == 1) {   // page 1 tapi nyala
+    
+    
 		// Set Servos ------
 		if(prev_Vti != Vti){
 			setServoPEEP(Vti);
@@ -200,10 +204,12 @@ void loop() {
 			if(fighting()){
 				digitalWrite(triggerInhalePin,LOW);
 			}
+      now = millis();
 		} else {  //when exhaleStage == false, or in other word, between PEEP to IPP, or in simple, when inhalation
-
+      dt = (millis()-now)/1000;
       calcVolumeAcc();  // calculate accumulated inhale volume
-
+      now = millis();
+      
       if (volumeAcc > Vti) {        // warning volume to nano through digital pin
         digitalWrite(warningVolume_PIN,LOW);
         delay(1);
@@ -232,6 +238,8 @@ void loop() {
 		if (state == 0) {
 			break;
 		}
+   Serial.println("===========> TIME:" + String(millis()-now));
+   
 	}
 	while (mode == 3) {   // page 4
 		nexLoop(nex_listen_list);
@@ -433,8 +441,11 @@ void flowUpdate() {
 // Read sensor output
 	flow_raw = analogRead(PIN_MPX5010DP_flow);
 //
+
+
+
 // Conversion to cmH2O based on datasheet
-	flow_float = calcDatasheetPressure(flow_raw+41);
+  flow_float = calcDatasheetPressure(flow_raw+41);
 
 // Convert value from DP (cmH20) to flow (LPM | litre per minute) (ver. mas husnul)
 	flow_float = sqrt((flow_float * 2 * 98.06) / 123000) * 0.064 * 60 * 1000;
@@ -444,6 +455,9 @@ void flowUpdate() {
 //  int adcA = 111; float flowA = 11; //Measurement #1
 //  int adcB = 222; float flowB = 22; //Measurement #2
 //  flow_float = mapFloat(flow_raw, float(sqrt(adcA)), float(sqrt(adcB)), flowA, flowB);
+
+// conversion based on CALLIBRATION
+	flow_float = 5.7871*flow_raw-248.76;
 
 // Convert to Nextion waveform graph scale
 //  flow_int8 = map(int(flow_float),-140,2500,0,255);
@@ -621,8 +635,9 @@ bool fighting(){
 
 //-- Calculate accumulated volume -----------------------
 void calcVolumeAcc() {
-  const byte dt = 1;
-  volumeAcc = (pressure_float * dt) + volumeAcc;
+//  const byte dt = 1;/
+  volumeAcc = (flow_float * dt) + volumeAcc;
+	Serial.println("========> VOL ACC:" + String(volumeAcc));
 }
 
 //-- Send alarm mode to buzzer/alarm microcontroller ----
@@ -637,7 +652,7 @@ void setAlarm(byte alarmOption) {
 //-- Servo to set Oxygen
 void setServoOx(uint32_t Oxq){
 	int sudut = map(Oxq, 0, 100, 0, 65);
-	
+
 	digitalWrite(enaServoOx, HIGH);
 	servoOxigen.write(sudut);
 	digitalWrite(enaServoOx, LOW);
