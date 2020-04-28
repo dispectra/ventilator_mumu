@@ -12,16 +12,18 @@
 
 //== GLOBAL VARIABLES ======================================
 
-// Transmitted variables to Nano
-//boolean state = 1;
-boolean warningVolume = 0;
-boolean warningPressure = 0;
-//int Vti = 500;
-float ERat = 2;
-//int RR = 12;
-boolean triggerInhale = 0;
+// Warning-Warning
 #define warningVolume_PIN 31
 #define warningPressure_PIN 30
+#define triggerInhalePin 31
+boolean warningVolume = 0;
+boolean warningPressure = 0;
+boolean triggerInhale = 0;
+
+// Pressure States
+float pip_value = 0;
+float ipp_value = 0;
+bool exhaleStage = false;
 
 // Nextion variables
 uint32_t state = 0;
@@ -29,8 +31,11 @@ uint32_t IE = 20;
 uint32_t RR = 10;
 uint32_t PEEP = 5;
 uint32_t Vti = 300;
-
 uint32_t Ox = 20;
+
+// buffers
+uint32_t prev_Vti = 0;
+float ERat = 2;
 
 int CurrentPage;
 int mode = 0;
@@ -38,11 +43,9 @@ int mode = 0;
 NexNumber n7 = NexNumber(1, 19, "n7");
 NexNumber n8 = NexNumber(1, 20, "n8");
 NexNumber n9 = NexNumber(1, 21, "n9");
-////update///
 NexNumber n10 = NexNumber(1, 22, "n10"); //Preserved for IPP
 NexNumber n11 = NexNumber(1, 23, "n11"); //Preserved for PEEP
 NexText t1 = NexText(1, 9, "t1");//Preserved for Alarm (send t1.pco = 63488), normally 12678
-////////////
 NexDSButton bt0 = NexDSButton(1, 3, "bt0");
 NexButton b7 = NexButton(4, 20, "b7");
 NexButton b8 = NexButton(4, 19, "b8");
@@ -59,19 +62,18 @@ NexPage page1 = NexPage(1, 0, "page1");
 NexPage page2 = NexPage(2, 0, "page2");
 NexPage page4 = NexPage(4, 0, "page4");
 NexPage page6 = NexPage(6, 0, "page6");
+
 NexTouch *nex_listen_list[] = {
-///Update///
 	&n7,&n8,&n9,&n10,&n11,
 	&b7,&b8,&b9,&b10,&b11,&b12,&b13,&b14,&b15,&b16,
 	&bt0, &page0, &page1, &page2, &page4, &page6, NULL
-///Update///
 };
 
 // Pressure and Flow variables
-uint8_t pressure_int8;
-uint8_t flow_int8;
 const int PIN_MPX5010DP_pressure = A1;
 const int PIN_MPX5010DP_flow = A0;
+uint8_t pressure_int8;
+uint8_t flow_int8;
 int pressure_raw;
 int flow_raw;
 float pressure_float;
@@ -121,19 +123,6 @@ void setup() {
 	page6.attachPush(page6PushCallback, &page6);
 //  dbSerialPrintln(CurrentPage);
 }
-
-void readPEEPQ(){
-	readPEEP = true;
-}
-
-void readIPPQ(){
-	readIPP = true;
-}
-
-float pip_value = 0;
-float ipp_value = 0;
-bool exhaleStage = false;
-#define triggerInhalePin 31
 
 //== MAIN LOOP =============================================
 void loop() {
@@ -187,16 +176,16 @@ void loop() {
 				digitalWrite(triggerInhalePin,LOW);
 			}
 		} else {  //when exhaleStage == false, or in other word, between PEEP to IPP, or in simple, when inhalation
-    
-      calcVolumeAcc();  // calculate accumulated inhale volume 
-      
+
+      calcVolumeAcc();  // calculate accumulated inhale volume
+
       if (volumeAcc > Vti) {        // warning volume to nano through digital pin
         digitalWrite(warningVolume_PIN,LOW);
         delay(1);
         digitalWrite(warningVolume_PIN,HIGH);
         setAlarm(1);
         }
-        
+
       if (pressure_float > 35) {    // warning pressure to nano through digital pin
         digitalWrite(warningPressure_PIN,LOW);
         delay(1);
@@ -204,14 +193,14 @@ void loop() {
         setAlarm(2);
         }
 		}
-   
+
 		nexLoop(nex_listen_list);
 		//dbSerialPrintln(mode);
-    
+
 		flowUpdate();
 		pressureUpdate1();
 		oxygenUpdate();
-   
+
 		if (CurrentPage != 1) {
 			break;
 		}
@@ -240,6 +229,10 @@ void loop() {
 
 
 //== FUNCTIONS =============================================
+
+//-- Interrupts
+void readPEEPQ(){readPEEP = true;}
+void readIPPQ(){readIPP = true;}
 
 //-- Sending necessary information to Arduino Nano ---------
 //-- (motor controller) through Serial2 port ---------------
@@ -608,7 +601,7 @@ void calcVolumeAcc() {
 
 //-- Send alarm mode to buzzer/alarm microcontroller ----
 void setAlarm(byte alarmOption) {
-  // to buzzer 
+  // to buzzer
 //  digitalWrite(pinA, bitRead(alarmOption, 0));
 //  digitalWrite(pinB, bitRead(alarmOption, 1));
 //  digitalWrite(pinC, bitRead(alarmOption, 2));

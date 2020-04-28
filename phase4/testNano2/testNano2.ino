@@ -85,14 +85,14 @@ void setup() {
 
 	pinMode(calManMaju, INPUT_PULLUP);
 	pinMode(calManMundur, INPUT_PULLUP);
-  pinMode(pinInhaleDetect, INPUT_PULLUP);
+	pinMode(pinInhaleDetect, INPUT_PULLUP);
 
 	pinMode(pinWarnVol, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(pinWarnVol), warnVolQ, FALLING);
 	pinMode(pinWarnPres, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(pinWarnPres), warnPresQ, FALLING);
 
-	
+
 
 	Serial.println("==> CALLIBRATING"); Serial.flush();
 	Callibrate();
@@ -161,12 +161,12 @@ void loop() {
 			int stepTidal2 = Inhale2();
 
 			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
-      readIPP(1);
+			readIPP(1);
 
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
 
-      readIPP(0);
+			readIPP(0);
 			Serial.println("==> EXHALE SEQUENCE");
 			Exhale(stepTidal2);
 		}
@@ -182,8 +182,8 @@ void loop() {
 
 		Serial.println("TIME TAKEN : " + String(micros() - now));
 		Serial.println("----");
-    warnPres = false;
-    warnVol = false;
+		warnPres = false;
+		warnVol = false;
 
 	} else {
 		readPEEP(0);
@@ -527,7 +527,7 @@ String listeningMega(){
 	lastData = seriesData;
 
 	//!! Dummy Data !!
-  seriesData = "<1,0,0,350,2,14,0>";
+	seriesData = "<1,0,0,350,2,14,0>";
 
 //  String seriesData2 = ;
 
