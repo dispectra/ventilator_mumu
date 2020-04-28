@@ -9,8 +9,16 @@
 #include <Nextion.h>
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
+#include <Servo.h>
 
 //== GLOBAL VARIABLES ======================================
+// Servos
+Servo servoPEEP;
+Servo servoOxigen;
+#define enaServoPEEP 38
+#define sigServoPEEP 36
+#define enaServoOx 42
+#define sigServoOx 40
 
 // Warning-Warning
 #define warningVolume_PIN 31
@@ -35,6 +43,7 @@ uint32_t Ox = 20;
 
 // buffers
 uint32_t prev_Vti = 0;
+uint32_t prev_Ox = 0;
 float ERat = 2;
 
 int CurrentPage;
@@ -95,7 +104,7 @@ double volumeAcc = 0;
 //== MAIN SETUP ============================================
 void setup() {
 	Serial.begin(115200);   // for debugging
-	Serial1.begin(57600 );   // from/to Nano
+	Serial1.begin(57600);   // from/to Nano
 	Serial2.begin(115200);   // from/to Nextion #Updated to 115200
 	ads.begin();      // from/to ADS115 + Oxygen
 
@@ -103,6 +112,11 @@ void setup() {
 	pinMode(9, OUTPUT);
 	attachInterrupt(digitalPinToInterrupt(3), readPEEPQ, FALLING);
 	attachInterrupt(digitalPinToInterrupt(2), readIPPQ, FALLING);
+
+	servoPEEP.attach(sigServoPEEP);
+	servoOxigen.attach(sigServoOx);
+	pinMode(enaServoPEEP, OUTPUT);
+	pinMode(enaServoOx, OUTPUT);
 
 	nexInit();
 	bt0.attachPush(bt0PushCallback, &bt0);
@@ -158,6 +172,17 @@ void loop() {
 		}
 	}
 	while (mode == 1) {   // page 1 tapi nyala
+		// Set Servos ------
+		if(prev_Vti != Vti){
+			setServoPEEP(Vti);
+			prev_Vti = Vti;
+		}
+		if(prev_Ox != Ox){
+			setServoOx(Ox);
+			prev_Ox = Ox;
+		}
+
+		// PEEP and IPP Check ----
 		if(readPEEP){
 			PEEPUpdate();
 			pip_value = 0;
@@ -585,6 +610,7 @@ void oxygenUpdate() {
 ////////////
 }
 
+//-- Check if patient fight (spurious breath)
 bool fighting(){
 	bool fight = false;
 	// if(pressure_float < 0 && flow_float > 0){
@@ -606,4 +632,79 @@ void setAlarm(byte alarmOption) {
 //  digitalWrite(pinB, bitRead(alarmOption, 1));
 //  digitalWrite(pinC, bitRead(alarmOption, 2));
 //  digitalWrite(pinD, bitRead(alarmOption, 3));
+}
+
+//-- Servo to set Oxygen
+void setServoOx(uint32_t Oxq){
+	int sudut = map(Oxq, 0, 100, 0, 65);
+	
+	digitalWrite(enaServoOx, HIGH);
+	servoOxigen.write(sudut);
+	digitalWrite(enaServoOx, LOW);
+}
+
+//-- Servo to set PEEP opening
+void setServoPEEP(uint32_t Vol){
+	int sudut = round(cariBukaanPEEP(Vol));
+
+	digitalWrite(enaServoPEEP, HIGH);
+	servoPEEP.write(sudut);
+	digitalWrite(enaServoPEEP, LOW);
+}
+
+//-- Lookup Table for Servo PEEP vs VOLUME
+float cariBukaanPEEP(float vol_Tidal){
+	float lookup_vol[] = {223.75, 289.53, 355.72, 410.89, 475.67, 550.83, 606.44, 653.11, 704.17, 748.33, 771.95};
+	float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950};
+
+	float stepTidal = 0;
+	int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);
+
+	// Extrapolasi Bawah
+	if(vol_Tidal < cariMin(lookup_vol, arraySize)) {
+		float m = float(lookup_step[1] - lookup_step[0]) / (lookup_vol[1] - lookup_vol[0]);
+		float c = float(lookup_step[0]) - lookup_vol[0] * m;
+		stepTidal = m * vol_Tidal + c;
+	}
+	// Extrapolasi Atas
+	else if(vol_Tidal > cariMax(lookup_vol, arraySize)) {
+		float m = float(lookup_step[arraySize-1] - lookup_step[arraySize-2]) / (lookup_vol[arraySize-1] - lookup_vol[arraySize-2]);
+		float c = float(lookup_step[arraySize-1]) - lookup_vol[arraySize-1] * m;
+		stepTidal = m * vol_Tidal + c;
+	}
+	// Normal + Interpolasi
+	else {
+		for(int i = 0; i< arraySize; i++) {
+			if (vol_Tidal == lookup_vol[i]) {
+				stepTidal = lookup_step[i];
+			} else {
+				if(vol_Tidal >= lookup_vol[i] && vol_Tidal < lookup_vol[i+1]) {
+					stepTidal = lookup_step[i] + float(lookup_step[i+1] - lookup_step[i]) * float(vol_Tidal - lookup_vol[i]) / float(lookup_vol[i+1]-lookup_vol[i]);
+					break;
+				}
+			}
+		}
+	}
+	return stepTidal;
+}
+
+//-- fungsi tambahan lookup table
+float cariMin(float list[], int arraySize){
+	float mini = 99999;
+	for(int i=0; i< arraySize; i++) {
+		if(list[i] <= mini) {
+			mini = list[i];
+		}
+	}
+	return mini;
+}
+
+float cariMax(float list[], int arraySize){
+	float maxi = 0;
+	for(int i=0; i< arraySize; i++) {
+		if(list[i] >= maxi) {
+			maxi = list[i];
+		}
+	}
+	return maxi;
 }
