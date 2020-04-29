@@ -9,8 +9,11 @@
 #define pinPresWarn 4
 #define pinPresHold 5
 #define pinVolWarn 6
+<<<<<<< HEAD
 #define pinSpur 7
 #define pinFight 8
+=======
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
 
 // GLOBAL VARIABLES
 float pressure_val, flow_val;
@@ -31,7 +34,11 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(pinPEEP), readPEEPQ, FALLING);
   pinMode(pinIPP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(pinIPP), readIPPQ, FALLING);
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
   now = micros();
 }
 
@@ -43,6 +50,7 @@ void loop() {
   flow_raw = analogRead(pinFlow);
   pressure_val = calcPressure(pressure_raw);
   flow_val = calcFlow(flow_raw);
+<<<<<<< HEAD
 
   if(micros() - now > 100000){ //setiap 100 millis
     sendDataToMega(0);
@@ -56,17 +64,33 @@ void loop() {
     vol_acc = 0;
   }
 
+=======
+  
+  if(micros() - now > 100000){ //setiap 100 millis
+    sendDataToMega(0);
+  }
+  
+  if(readPEEP){
+    sendDataToMega(1);
+    exhaleStage = false;
+    vol_acc = 0;
+  }
+  
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
   if(readIPP){
     sendDataToMega(2);
     exhaleStage = true;
   }
 
   if(exhaleStage){ //fasa exhale
+<<<<<<< HEAD
     //0. Cek Spurious
     if(spuriousDetect()){
       digitalWrite(pinSpur, LOW);
     }
 
+=======
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
     //1. Jaga pressure
     if(pressure_raw<=PEEP_lim){
       digitalWrite(pinPresHold, HIGH);
@@ -74,11 +98,14 @@ void loop() {
       digitalWrite(pinPresHold, LOW);
     }
   } else { //fasa inhale
+<<<<<<< HEAD
     //0. Cek Fighting
     if(fightingDetect()){
       digitalWrite(pinFight,LOW)
     }
 
+=======
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
     //1. Jaga Pressure
     if(pressure_raw > PIP_lim){
       digitalWrite(pinPresWarn, LOW);
@@ -95,8 +122,13 @@ void loop() {
     }
   }
 
+<<<<<<< HEAD
 
 
+=======
+  
+  
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
 }
 
 //== FUNCTIONS ------------------------------------------------------
@@ -116,6 +148,7 @@ float calcFlow(float flow_rawq){
   return calc;
 }
 
+<<<<<<< HEAD
 //- Detect Spurious
 bool spuriousDetect(){
   bool spurious = false;
@@ -135,11 +168,17 @@ bool fightingDetect(){
 }
 
 
+=======
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
 //- From/to Mega
 void readDataFromMega(){
   // baca Vtidal, PEEP, PIP
   // Update nilai limit Vol_lim, PEEP_lim, PIP_lim
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 3f0841459144f100073dad03c15e66a059de2d12
 }
 
 void sendDataToMega(int mode){
