@@ -306,13 +306,8 @@ float digitalFilter(float newImpulse) {
 }
 
 //-- Float type mapper, for linear regression calibration --
-float mapFloat(int rawX, int rawA, int rawB, float realA, float realB) {
-	float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
-	return realX;
-}
-// function overloading of mapFloat()
-float mapFloat(int rawX, float rawA, float rawB, float realA, float realB) {
-	float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
+float mapFloat(float rawX, float rawA, float rawB, float realA, float realB) {
+	float realX = ( (realB - realA) * ((rawX - rawA) / (rawB - rawA)) ) + realA;
 	return realX;
 }
 
