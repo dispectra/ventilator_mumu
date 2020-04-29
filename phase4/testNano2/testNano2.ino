@@ -1,4 +1,4 @@
-// Low-Cost Ventilator
+pinSpurious// Low-Cost Ventilator
 // ----
 // Code including serial comm with mega
 // Cek2an di sela2 step dihapus
@@ -35,14 +35,14 @@ SoftwareSerial SerialM(11,12); //RX, TX
 #define limitSwitchEx 6
 #define calManMaju 7
 #define calManMundur 8
-//#define LEDCallibrate 13
 
 #define pinPEEP A1
 #define pinIPP A0
 
 #define pinWarnVol 2 //31
 #define pinWarnPres 3 //30
-#define pinInhaleDetect A2 //29
+#define pinSpurious A2 //29
+#define pinPresHold A3
 
 bool callibrated = false;
 bool updated = false;
@@ -85,14 +85,12 @@ void setup() {
 
 	pinMode(calManMaju, INPUT_PULLUP);
 	pinMode(calManMundur, INPUT_PULLUP);
-	pinMode(pinInhaleDetect, INPUT_PULLUP);
+	pinMode(pinSpurious, INPUT_PULLUP);
 
 	pinMode(pinWarnVol, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(pinWarnVol), warnVolQ, FALLING);
 	pinMode(pinWarnPres, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(pinWarnPres), warnPresQ, FALLING);
-
-
 
 	Serial.println("==> CALLIBRATING"); Serial.flush();
 	Callibrate();
@@ -171,11 +169,33 @@ void loop() {
 			Exhale(stepTidal2);
 		}
 
-
 		while((micros()-now) < timeBreath) {
 //        delayMicroseconds(1);
-			if(checkInhale()) {
+			if(checkSpurious()) {
 				spontaneousPrev = true;
+			}
+
+			if (spontaneousPrev) {
+				if(!checkPEEP()){ // kalau PEEP blm melewati batas
+					digitalWrite(dirPin, dirInhale);
+					digitalWrite(stepPin,HIGH);
+					delayMicroseconds(1000);
+					digitalWrite(stepPin,LOW);
+					delayMicroseconds(1000);
+				} else {
+					digitalWrite(dirPin, !dirInhale);
+					digitalWrite(stepPin,HIGH);
+					delayMicroseconds(1000);
+					digitalWrite(stepPin,LOW);
+					delayMicroseconds(1000);
+				}
+				// while(digitalRead(limitSwitchEx)){
+				// 	digitalWrite(dirPin, !dirInhale);
+				// 	digitalWrite(stepPin,HIGH);
+				// 	delayMicroseconds(1000);
+				// 	digitalWrite(stepPin,LOW);
+				// 	delayMicroseconds(1000);
+				// }
 			}
 		}
 		Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal));
@@ -358,7 +378,7 @@ void Exhale(int stepTidalE) {
 		}
 
 		delayMicroseconds(delayExhale2);
-		if(checkInhale()) {
+		if(checkSpurious()) {
 			spontaneousPrev = true;
 		}
 
@@ -368,16 +388,9 @@ void Exhale(int stepTidalE) {
 
 		delayMicroseconds(delayExhale2);
 //
-		if(checkInhale()) {
+		if(checkSpurious()) {
 			spontaneousPrev = true;
 		}
-	}
-
-	while(digitalRead(limitSwitchEx) && micros() - now < timeExhale + 500000) {
-		digitalWrite(stepPin,HIGH);
-		delayMicroseconds(1000);
-		digitalWrite(stepPin,LOW);
-		delayMicroseconds(1000);
 	}
 
 	// 3. Tampil Waktu
@@ -534,10 +547,15 @@ String listeningMega(){
 	return seriesData.substring(1,seriesData.length()-1);
 }
 
-bool checkInhale(){
-	triggerInhale = !digitalRead(pinInhaleDetect);
+bool checkSpurious(){
+	triggerInhale = !digitalRead(pinSpurious);
 //  Serial.println(triggerInhale);
 	return triggerInhale;
+}
+
+bool checkPEEP(){
+	bool check = !digitalRead(pinPresHold);
+	return check;
 }
 
 void warnVolQ(){
