@@ -14,7 +14,7 @@
 // microstepping = settingan microstepping (1 / 2 / 4 / 8 / 16)
 // dirInhale = arah untuk inhale (HIGH / LOW)
 #define dirPin 4
-#define stepPin 3
+#define stepPin 9
 #define microstepping 4
 #define dirInhale LOW
 #define limitSwitchIn 5
@@ -28,10 +28,10 @@
 // volTidal = Volume Tidal (cc)
 // IRat dan ERat = IERatio ( I : E )
 // RR = Respiration Rate (x per minute)
-float volTidal = 600;
+float volTidal = 300;
 int IRat = 1;
 int ERat = 2;
-int RR = 14;
+int RR = 10;
 
 //-- GLOBAL VARIABLEs ===============================================================
 unsigned long stepTidal, delayInhale, delayExhale, timeInEx;
@@ -50,11 +50,11 @@ void setup() {
   timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
   timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
   delayInhale = float(timeInhale) / float(stepTidal) / 2; //endDelay; // dalam microseconds
-  delayExhale = 300; //delayInhale; // dalam microseconds
+  delayExhale = 600; //delayInhale; // dalam microseconds
   
 //  timeInEx = stepTidal * delayInhale/; 
 
-  pinMode(2, INPUT_PULLUP);
+  pinMode(10, INPUT_PULLUP);
   pinMode(7, INPUT_PULLUP);
   pinMode(8, INPUT_PULLUP);
   pinMode(limitSwitchIn, INPUT_PULLUP);
@@ -77,7 +77,7 @@ void setup() {
 
 //-- LOOP ============================================================================
 void loop() {
-  if(digitalRead(2) == LOW){
+  if(digitalRead(10) == LOW){
     Serial.println("MODE 1");
     if (stepTidal > 0) {
       unsigned long now = micros();
@@ -227,7 +227,7 @@ void Inhale() {
 //-- Sekuens Exhale ====================================================================
 void Exhale() {
   // 0. Hitung Waktu
-  initDelay = 600;
+  initDelay = 1000;
   unsigned long now = micros();
   float delayExhale2 = initDelay;
   
