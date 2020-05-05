@@ -37,7 +37,7 @@ void loop(void)
   volts = (rawADCvalue01 * scalefactor);
 //  pressure = mapFloat(volts,0,35,0,10000);  //in Pa
 //  pressure = mapFloat(volts,0,35,0,101.972); //in cmH2O
-  pressure = mapFloat(rawADCvalue01,0,100,-59.82,-57.82) - 0.9;
+  pressure = mapFloat(sqrt(rawADCvalue01),0,100,-4852.5,4162.4) - 109; //sebenernya flow
 
 //  Serial.print(rawADCvalue01);
 //  Serial.print(" ");
@@ -49,9 +49,9 @@ void loop(void)
 //  Serial.println();  
 
 //- PLX-DAQ format
-  Serial.print("DATA,TIME,TIMER,");
-  Serial.print(rawADCvalue01); Serial.print(",");
-  Serial.print(volts); Serial.print(",");
+//  Serial.print("DATA,TIME,TIMER,");
+//  Serial.print(rawADCvalue01); Serial.print(",");
+//  Serial.print(volts); Serial.print(",");
   Serial.println(pressure);
 
   delay(1);

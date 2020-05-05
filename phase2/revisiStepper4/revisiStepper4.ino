@@ -131,7 +131,7 @@ void loop() {
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
-  float lookup_vol[] = {219, 293, 363, 435, 507, 584, 669, 751, 833, 885, 921};
+  float lookup_vol[] = {223.75, 289.53, 355.72, 410.89, 475.67, 550.83, 606.44, 653.11, 704.17, 748.33, 771.95};
   float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950};
 
   float stepTidal = 0;
