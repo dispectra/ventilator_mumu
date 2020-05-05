@@ -8,19 +8,14 @@ Adafruit_ADS1115 ads;
 // PIN LIST
 #define pinPEEP 2
 #define pinIPP 3
-#define pinPressure A0
-#define pinFlow A1
 
-#define pinPresWarn 4
-#define pinPresHold 5
 #define pinVolWarn 6
 #define pinSpur 7
 #define pinFight 8
 
 // GLOBAL VARIABLES
-float pressure_val, flow_val;
-float pressure_raw, flow_raw;
-int PEEP_lim, vol_lim, PIP_lim;
+float flow_raw, flow_val;
+int vol_lim;
 unsigned long now;
 double vol_acc = 0;
 
@@ -32,6 +27,10 @@ String bufferq[2];
 String lastData = "<0, 0>";
 bool statusON;
 
+unsigned long nowq = 0;
+unsigned long dt = 0;
+bool lastState = 0; //0 Inhale, 1 Exhale
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -39,49 +38,52 @@ void setup() {
 
   ads.begin();
   ads.setGain(GAIN_SIXTEEN);
-  
+
   pinMode(pinPEEP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(pinPEEP), readPEEPQ, FALLING);
   pinMode(pinIPP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(pinIPP), readIPPQ, FALLING);
 
-  now = micros();
+  nowq = micros();
 }
 
-unsigned long nowq = 0;
-unsigned long dt = 0;
-bool lastState = 0; //0 Inhale, 1 Exhale
 void loop() {
   // put your main code here, to run repeatedly:
   readDataFromMega();
+  statusON = 1;
+  vol_lim = 300;
 
   flow_raw = ads.readADC_Differential_0_1();
   flow_val = calcFlow(flow_raw);
 
-   if(abs((flow_val)) <= 1.6){flow_val=0;}
+   if(abs(flow_val) <= 1.6){flow_val=0;}
 ///  Serial.println(flow_val);
   if(statusON){
-
     if(readPEEP){
+      //reset stuffs
       digitalWrite(pinSpur, HIGH);
       digitalWrite(pinFight, HIGH);
-      exhaleStage = false;
       vol_acc = 0;
+
+      // indicate INHALE
+      exhaleStage = false;
+
+      // reset time and var
       nowq = micros();
       readPEEP = false;
     }
-  
+
     if(readIPP){
       exhaleStage = true;
       readIPP = false;
     }
-    
+
     if(exhaleStage){ //fasa exhale
       if(lastState == 0){
         Serial.println("EXHALE STAGE");
         lastState = 1;
       }
-      
+
       //0. Cek Spurious
       if(spuriousDetect()){
         digitalWrite(pinSpur, LOW);
@@ -95,7 +97,7 @@ void loop() {
       if(fightingDetect()){
         digitalWrite(pinFight,LOW);
       }
-  
+
       //1. Jaga Volume
       dt = micros()-nowq;
       vol_acc += flow_val/60 * dt/1000;
@@ -145,11 +147,8 @@ bool fightingDetect(){
 
 //- From/to Mega
 void readDataFromMega(){
-//  Serial.println("PING");
-  // baca Vtidal, PEEP, PIP
-  // Update nilai limit Vol_lim, PEEP_lim, PIP_lim
   String received = listeningMega();
-  
+
 //  Serial.println(updated);
 	if(updated == false) {
 		Serial.print("Received: ");
@@ -179,7 +178,6 @@ String listeningMega(){
 	bool quit = false;
 	String seriesData = "";
 
-//  Serial.println(F("Waiting data from Mega...")); Serial.flush();
 	while (!quit) {
 		if (SerialM.available() > 0) {
 			updated = false;
@@ -199,7 +197,7 @@ String listeningMega(){
 	lastData = seriesData;
 
 	//!! Dummy Data !!
-	seriesData = "<1, 300>";
+	// seriesData = "<1, 300>";
 
 //  String seriesData2 = ;
 
