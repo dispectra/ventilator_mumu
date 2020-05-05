@@ -11,6 +11,7 @@
 #include <Adafruit_ADS1015.h>
 #include <Servo.h>
 
+SoftwareSerial SerialFl(A8, A9);
 //== GLOBAL VARIABLES ======================================
 // Servos
 Servo servoPEEP;
@@ -107,7 +108,9 @@ void setup() {
 	Serial.begin(115200);   // for debugging
 	Serial1.begin(57600);   // from/to Nano
 	Serial2.begin(115200);   // from/to Nextion #Updated to 115200
-//	Serial3.begin(115200); // NANO alarm
+	// Serial3.begin(115200); // NANO alarm
+	SerialFl.begin(57600); // NANO FLOW
+
 	ads.begin();      // from/to ADS115 + Oxygen
 //  ads.setGain(GAIN_SIXTEEN);
 
@@ -151,17 +154,17 @@ void loop() {
 
   // state = 0, artinya mesin berhenti
   // state = 1, mesin jalan
-  
+
   // mode untuk loop nya
   // mode 5 = routine stuck ketika alarm level = HIGH
-  
+
   // Page 0 welcome
   // Page 1 main display (yg ada grafik)
   // Page 2 pemilihan mode (pemilihan assist/mandatory)
   // Page 4 Setting/config (IE, RR, Vti, PEEP, O2)
   // Page 6 Setting alarm (over PIP, under IPP, O2_tolerance)
-  
-	if (state == 0 && CurrentPage == 1) {mode = 0;}    
+
+	if (state == 0 && CurrentPage == 1) {mode = 0;}
 	if (state == 1 && CurrentPage == 1) {mode = 1;}
 	if (CurrentPage == 2) {mode = 2;}     // page 2
 	if (CurrentPage == 4) {mode = 3;}
@@ -174,7 +177,7 @@ void loop() {
 		if (CurrentPage != 1) {break;}
 		if (state == 1) {break;}
 	}
- 
+
 	while (mode == 1) {   // page 1 tapi nyala
 
 		// // Set Servos ------
@@ -234,7 +237,7 @@ void loop() {
 		if (CurrentPage != 1) {break;}
 		if (state == 0) {break;}
 	}
- 
+
 	while (mode == 3) {   // page 4
 		nexLoop(nex_listen_list);
 //    dbSerialPrintln(mode);
@@ -243,7 +246,7 @@ void loop() {
 //    Serial.println(Vti);
 		if (CurrentPage != 4) {break;}
 	}
- 
+
 	while (mode == 4) {   // mode nerima bacaan pengaturan trigger (belum disetel)
 		nexLoop(nex_listen_list);
 //    dbSerialPrintln(mode);
@@ -279,6 +282,10 @@ void update2Nano() {
 	                 + String(ERat) + ','
 	                 + String(RR) + '>';
 	Serial1.print(message); Serial1.flush();
+
+	message = '<' + String(state) + ','
+						    + String(Vti) + '>';
+	SerialFl.print(message); SerialFl.flush();
 
 // Debug message
 //  Serial.print(F("Message sent to Nano:\n\t")); Serial.print(message); Serial.flush();
@@ -519,9 +526,9 @@ void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
   //alarmzz[4] = Sporious breath (MEDIUM)
   //alarmzz[5] = Overtidal volume (MEDIUM)
   //alarmzz[6] = Low PEEP (MEDIUM)
-  //alarmzz[7] = 
+  //alarmzz[7] =
   //alarmzz[8] = Low/Oversupply of Oxygen (LOW)
-  
+
   int key_index = key.substring(0,2).toInt();
 //  Serial.println(key_index);  // debugging
   if (key.substring(3) == "ON") {alarms[key_index] = 1;}
@@ -529,14 +536,14 @@ void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
     for (int j = 0; j<9; j++) {alarms[j] = 0;}
   }
   else {alarms[key_index] = 0;}
-  
+
   String msg = "<";
   msg = msg + String(alarms[0]);
   for(int i = 1;i<9;i++) {
     msg = msg + "," + String(alarms[i]);
   }
   msg = msg + ">";
-  
+
   Serial3.println(msg); Serial3.flush();
   Serial.println(msg);
 }
