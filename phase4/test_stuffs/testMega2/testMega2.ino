@@ -100,12 +100,14 @@ bool readPEEP = false;
 bool readIPP = false;
 
 double volumeAcc = 0;
-
+double dt;
+unsigned long now = 0;
 //== MAIN SETUP ============================================
 void setup() {
 	Serial.begin(115200);   // for debugging
 	Serial1.begin(57600);   // from/to Nano
 	Serial2.begin(115200);   // from/to Nextion #Updated to 115200
+	Serial3.begin(115200); //nano sensor
 	ads.begin();      // from/to ADS115 + Oxygen
 
 	pinMode(3, INPUT_PULLUP);
@@ -137,8 +139,7 @@ void setup() {
 	page6.attachPush(page6PushCallback, &page6);
 //  dbSerialPrintln(CurrentPage);
 }
-unsigned long dt, now;
-now = 0;
+
 
 //== MAIN LOOP =============================================
 void loop() {
@@ -174,17 +175,16 @@ void loop() {
 		}
 	}
 	while (mode == 1) {   // page 1 tapi nyala
-    
-    
-		// Set Servos ------
-		if(prev_Vti != Vti){
-			setServoPEEP(Vti);
-			prev_Vti = Vti;
-		}
-		if(prev_Ox != Ox){
-			setServoOx(Ox);
-			prev_Ox = Ox;
-		}
+
+		// // Set Servos ------
+		// if(prev_Vti != Vti){
+		// 	setServoPEEP(Vti);
+		// 	prev_Vti = Vti;
+		// }
+		// if(prev_Ox != Ox){
+		// 	setServoOx(Ox);
+		// 	prev_Ox = Ox;
+		// }
 
 		// PEEP and IPP Check ----
 		if(readPEEP){
@@ -206,10 +206,11 @@ void loop() {
 			}
       now = millis();
 		} else {  //when exhaleStage == false, or in other word, between PEEP to IPP, or in simple, when inhalation
-      dt = (millis()-now)/1000;
+      dt = millis()-now;
+      Serial.println("===========> TIME:" + String(dt));
       calcVolumeAcc();  // calculate accumulated inhale volume
       now = millis();
-      
+
       if (volumeAcc > Vti) {        // warning volume to nano through digital pin
         digitalWrite(warningVolume_PIN,LOW);
         delay(1);
@@ -238,8 +239,8 @@ void loop() {
 		if (state == 0) {
 			break;
 		}
-   Serial.println("===========> TIME:" + String(millis()-now));
-   
+
+
 	}
 	while (mode == 3) {   // page 4
 		nexLoop(nex_listen_list);
@@ -306,8 +307,13 @@ float digitalFilter(float newImpulse) {
 }
 
 //-- Float type mapper, for linear regression calibration --
-float mapFloat(float rawX, float rawA, float rawB, float realA, float realB) {
-	float realX = ( (realB - realA) * ((rawX - rawA) / (rawB - rawA)) ) + realA;
+float mapFloat(int rawX, int rawA, int rawB, float realA, float realB) {
+	float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
+	return realX;
+}
+// function overloading of mapFloat()
+float mapFloat(int rawX, float rawA, float rawB, float realA, float realB) {
+	float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
 	return realX;
 }
 

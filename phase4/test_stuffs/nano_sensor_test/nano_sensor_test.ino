@@ -1,5 +1,8 @@
 #include <SoftwareSerial.h>
 
+SoftwareSerial SerialM(11,12);
+
+
 // PIN LIST
 #define pinPEEP 2
 #define pinIPP 3
@@ -22,10 +25,14 @@ int vol_acc = 0;
 bool readPEEP = false;
 bool readIPP = false;
 bool exhaleStage = false;
+bool updated = false;
+String bufferq[2];
+String lastData = "<0,0>";
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  SerialM.begin(57600);
 
   pinMode(pinPEEP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(pinPEEP), readPEEPQ, FALLING);
@@ -35,21 +42,17 @@ void setup() {
   now = micros();
 }
 
+unsigned long nowq = 0;
+unsigned long dt = 0;
+
 void loop() {
   // put your main code here, to run repeatedly:
   readDataFromMega();
 
-  pressure_raw = analogRead(pinPressure);
   flow_raw = analogRead(pinFlow);
-  pressure_val = calcPressure(pressure_raw);
   flow_val = calcFlow(flow_raw);
 
-  if(micros() - now > 100000){ //setiap 100 millis
-    sendDataToMega(0);
-  }
-
   if(readPEEP){
-    sendDataToMega(1);
     digitalWrite(pinSpur, HIGH);
     digitalWrite(pinFight, HIGH);
     exhaleStage = false;
@@ -57,7 +60,6 @@ void loop() {
   }
 
   if(readIPP){
-    sendDataToMega(2);
     exhaleStage = true;
   }
 
@@ -66,37 +68,23 @@ void loop() {
     if(spuriousDetect()){
       digitalWrite(pinSpur, LOW);
     }
-
-    //1. Jaga pressure
-    if(pressure_raw<=PEEP_lim){
-      digitalWrite(pinPresHold, HIGH);
-    } else {
-      digitalWrite(pinPresHold, LOW);
-    }
   } else { //fasa inhale
     //0. Cek Fighting
     if(fightingDetect()){
-      digitalWrite(pinFight,LOW)
+      digitalWrite(pinFight,LOW);
     }
 
-    //1. Jaga Pressure
-    if(pressure_raw > PIP_lim){
-      digitalWrite(pinPresWarn, LOW);
-      delayMicroseconds(10);
-      digitalWrite(pinPresWarn, HIGH);
-    }
-
-    //2. Jaga Volume
-    vol_acc += flow_raw;
+    //1. Jaga Volume
+    dt = millis()-nowq;
+    vol_acc += flow_raw * dt;
+    nowq = millis();
+//    Serial.println(vol_acc);
     if(vol_acc> vol_lim){
       digitalWrite(pinVolWarn, LOW);
       delayMicroseconds(10);
       digitalWrite(pinVolWarn, HIGH);
     }
   }
-
-
-
 }
 
 //== FUNCTIONS ------------------------------------------------------
@@ -105,14 +93,9 @@ void loop() {
 void readPEEPQ(){readPEEP = true;}
 void readIPPQ(){readIPP = true;}
 
-//- Calc Pressure and Flow from Callibration
-float calcPressure(float pressure_rawq){
-  float calc = 0.1095*pressure_rawq-4.6591;
-  return calc;
-}
-
+//- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = 5.7871*flow_rawq-248.76;
+  float calc = 0.8366*flow_rawq-2424.1563;
   return calc;
 }
 
@@ -137,13 +120,63 @@ bool fightingDetect(){
 
 //- From/to Mega
 void readDataFromMega(){
+//  Serial.println("PING");
   // baca Vtidal, PEEP, PIP
   // Update nilai limit Vol_lim, PEEP_lim, PIP_lim
+  String received = listeningMega();
+  if(received="0,0"){updated=true;};
+  Serial.println(updated);
+	if(updated == false) {
+		Serial.print("Received: ");
+		Serial.println(received);
+		Serial.flush();
+   delay(1000);
 
+		int indexStart = 0;
+		int indexEnd = 0;
+
+		for(int i = 0; i<7; i++) {
+			indexEnd = received.indexOf(",", indexStart);
+			bufferq[i] = received.substring(indexStart, indexEnd);
+			indexStart = indexEnd+1;
+			//    Serial.println(String(i) + ": " + bufferq[i]);
+		}
+
+		vol_lim = bufferq[0].toInt();
+		PEEP_lim = bufferq[1].toInt();
+		PIP_lim = 35;
+
+		updated = true;
+	}
 }
 
-void sendDataToMega(int mode){
-  // 0 : Normal
-  // 1 : PEEP
-  // 2 : IPP
+String listeningMega(){
+	bool quit = false;
+	String seriesData = "";
+
+//  Serial.println(F("Waiting data from Mega...")); Serial.flush();
+	while (!quit) {
+		if (SerialM.available() > 0) {
+			updated = false;
+			char x = SerialM.read();
+			if (x == '>') {
+				seriesData += x;
+				quit = true;
+			} else {
+				if (x == '<') {seriesData = "";}
+				seriesData += x;
+			}
+		} else {
+			seriesData = lastData;
+			quit = true;
+		}
+	}
+	lastData = seriesData;
+
+	//!! Dummy Data !!
+//	seriesData = "<1,0,0,350,2,14,0>";
+
+//  String seriesData2 = ;
+
+	return seriesData.substring(1,seriesData.length()-1);
 }

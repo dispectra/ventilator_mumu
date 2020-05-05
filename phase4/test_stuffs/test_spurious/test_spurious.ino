@@ -1,10 +1,10 @@
-#define pinPressure A0
-#define pinFlow A1
+#define pinPressure A1
+#define pinFlow A0
 
 float lastValue = 0;
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(4, OUTPUT);
 }
 
@@ -12,10 +12,10 @@ void loop() {
   // put your main code here, to run repeatedly:
   
   float pressure = analogRead(pinPressure); // 0 di 158-159
-  float flow = 5.7871*analogRead(pinFlow)-248.76;
+  float flow = 5.7871*analogRead(pinFlow)-295.14;
  
-  Serial.print(pressure);
-  Serial.print("\t");
+//  Serial.print(pressure);
+//  Serial.print("\t");
   Serial.println(flow);
   // Flow Naik Pressure Turun
 //  if(pressure<=158 && flow>12){
@@ -32,7 +32,7 @@ void loop() {
 //  Serial.print("\t");
 //  Serial.println(x);
 //  lastValue = y;
-  delay(100);
+  delay(1);
 }
 
 float impulse[] = {0.0, 0.0, 0.0, 0.0, 0.0};
