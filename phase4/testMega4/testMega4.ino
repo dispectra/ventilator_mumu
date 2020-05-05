@@ -107,7 +107,7 @@ void setup() {
 	Serial.begin(115200);   // for debugging
 	Serial1.begin(57600);   // from/to Nano
 	Serial2.begin(115200);   // from/to Nextion #Updated to 115200
-//	Serial3.begin(115200); //nano sensor
+//	Serial3.begin(115200); // NANO alarm
 	ads.begin();      // from/to ADS115 + Oxygen
 //  ads.setGain(GAIN_SIXTEEN);
 
@@ -147,35 +147,34 @@ void setup() {
 //== MAIN LOOP =============================================
 void loop() {
 	update2Nano();
-//  nexLoop(nex_listen_list);
 	Serial.println("state" + String(state));
-	if (state == 0 && CurrentPage == 1) {
-		mode = 0;
-	}
-	if (state == 1 && CurrentPage == 1) {
-		mode = 1;
-	}
-	if (CurrentPage == 2) {
-		mode = 2;     // page 2
-	}
-	if (CurrentPage == 4) {
-		mode = 3;
-	}
-	if (CurrentPage == 6) {
-		mode = 4;
-	}
+
+  // state = 0, artinya mesin berhenti
+  // state = 1, mesin jalan
+  
+  // mode untuk loop nya
+  // mode 5 = routine stuck ketika alarm level = HIGH
+  
+  // Page 0 welcome
+  // Page 1 main display (yg ada grafik)
+  // Page 2 pemilihan mode (pemilihan assist/mandatory)
+  // Page 4 Setting/config (IE, RR, Vti, PEEP, O2)
+  // Page 6 Setting alarm (over PIP, under IPP, O2_tolerance)
+  
+	if (state == 0 && CurrentPage == 1) {mode = 0;}    
+	if (state == 1 && CurrentPage == 1) {mode = 1;}
+	if (CurrentPage == 2) {mode = 2;}     // page 2
+	if (CurrentPage == 4) {mode = 3;}
+	if (CurrentPage == 6) {mode = 4;}
 
 	while (mode == 0) {     // page 1 tapi nggak nyala/stop
 		nexLoop(nex_listen_list);
 		oxygenUpdate();
 
-		if (CurrentPage != 1) {
-			break;
-		}
-		if (state == 1) {
-			break;
-		}
+		if (CurrentPage != 1) {break;}
+		if (state == 1) {break;}
 	}
+ 
 	while (mode == 1) {   // page 1 tapi nyala
 
 		// // Set Servos ------
@@ -210,13 +209,15 @@ void loop() {
 			//0. Cek Fighting
 			if(fighting()) {
 				digitalWrite(triggerInhalePin,LOW);
+        setAlarm("02_HIGH"); mode = 5;
 			}
 
 			//1. PEEP Pressure HOLD (CPAP)
 			if(pressure_float < PEEP_LIMIT && spuriousDetected){
 				digitalWrite(warningPEEP_PIN, LOW);
+        setAlarm("04_HIGH");
 			} else {
-				digitalWrite(warningPEEP_PIN, HIGH);
+				digitalWrite(warningPEEP_PIN, HIGH)
 			}
 
 		} else {  //when exhaleStage == false, or in other word, between PEEP to IPP, or in simple, when inhalation
@@ -225,35 +226,38 @@ void loop() {
 				digitalWrite(warningPressure_PIN,LOW);
 				delay(1);
 				digitalWrite(warningPressure_PIN,HIGH);
+        setAlarm("00_HIGH");
+        mode = 5;
 			}
 		}
 
-		if (CurrentPage != 1) {
-			break;
-		}
-		if (state == 0) {
-			break;
-		}
-
-
+		if (CurrentPage != 1) {break;}
+		if (state == 0) {break;}
 	}
+ 
 	while (mode == 3) {   // page 4
 		nexLoop(nex_listen_list);
 //    dbSerialPrintln(mode);
 //    Serial.print(IE);Serial.print("\t");Serial.print(RR);Serial.print("\t");
 //    Serial.print(PEEP);Serial.print("\t");Serial.print(Ox);Serial.print("\t");
 //    Serial.println(Vti);
-		if (CurrentPage != 4) {
-			break;
-		}
+		if (CurrentPage != 4) {break;}
 	}
-	while (mode == 4) {   // page ngatur trigger (belum disetel)
+ 
+	while (mode == 4) {   // mode nerima bacaan pengaturan trigger (belum disetel)
 		nexLoop(nex_listen_list);
 //    dbSerialPrintln(mode);
-		if (CurrentPage != 6) {
-			break;
-		}
+		if (CurrentPage != 6) {break;}
 	}
+
+  while (mode == 5) {   // mode utk routine stuck setelah alarm
+    state = 0;
+    if (digitalRead(ButtonResetAlarm_PIN == LOW)) {
+      mode = 0;
+      setAlarm("99_LOW"); // Reset and send all alarms[] off
+    }
+//    Serial.println("!!! ALARM HIGH. MACHINE STOPPED. FIX THE SETUP THEN PRESS ALARM RESET BUTTON !!!"); Serial.fulsh();
+  }
 }
 
 
@@ -280,35 +284,8 @@ void update2Nano() {
 //  Serial.print(F("Message sent to Nano:\n\t")); Serial.print(message); Serial.flush();
 }
 
-//-- Digital Filter ----------------------------------------
-float digitalFilter(float newImpulse) {
-// Variable declaration
-	byte filterOrder = 5;
-	float impulse[] = {0.0, 0.0, 0.0, 0.0, 0.0};
-	float weight[] = {0.1, 0.2, 0.3, 0.2, 0.1};
-	float respons = 0.0;
-
-// Updating impulses
-	for (int i = 0; i<(filterOrder-1); i++) {
-		impulse[i] = impulse[i+1];
-	}
-	impulse[filterOrder]=newImpulse;
-
-// Calculating response
-	for (int i=0; i<filterOrder; i++) {
-		respons += (impulse[i] * weight[i]);
-	}
-
-	return respons;
-}
-
 //-- Float type mapper, for linear regression calibration --
-float mapFloat(int rawX, int rawA, int rawB, float realA, float realB) {
-	float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
-	return realX;
-}
-// function overloading of mapFloat()
-float mapFloat(int rawX, float rawA, float rawB, float realA, float realB) {
+float mapFloat(float rawX, float rawA, float rawB, float realA, float realB) {
 	float realX = ( (realB - realA) * float((rawX - rawA) / (rawB - rawA)) ) + realA;
 	return realX;
 }
@@ -533,12 +510,35 @@ void calcVolumeAcc() {
 }
 
 //-- Send alarm mode to buzzer/alarm microcontroller ----
-void setAlarm(byte alarmOption) {
-	// to buzzer
-//  digitalWrite(pinA, bitRead(alarmOption, 0));
-//  digitalWrite(pinB, bitRead(alarmOption, 1));
-//  digitalWrite(pinC, bitRead(alarmOption, 2));
-//  digitalWrite(pinD, bitRead(alarmOption, 3));
+void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
+  //Define array of alarm triggers
+  //alarmzz[0] = High pressure exceeded PIP (HIGH)
+  //alarmzz[1] = Pressure too low (HIGH)
+  //alarmzz[2] = Patient is fighting (HIGH)
+  //alarmzz[3] = Overcurrent fault (HIGH)
+  //alarmzz[4] = Sporious breath (MEDIUM)
+  //alarmzz[5] = Overtidal volume (MEDIUM)
+  //alarmzz[6] = Low PEEP (MEDIUM)
+  //alarmzz[7] = 
+  //alarmzz[8] = Low/Oversupply of Oxygen (LOW)
+  
+  int key_index = key.substring(0,2).toInt();
+//  Serial.println(key_index);  // debugging
+  if (key.substring(3) == "ON") {alarms[key_index] = 1;}
+  else if (key_index == 99) {
+    for (int j = 0; j<9; j++) {alarms[j] = 0;}
+  }
+  else {alarms[key_index] = 0;}
+  
+  String msg = "<";
+  msg = msg + String(alarms[0]);
+  for(int i = 1;i<9;i++) {
+    msg = msg + "," + String(alarms[i]);
+  }
+  msg = msg + ">";
+  
+  Serial3.println(msg); Serial3.flush();
+  Serial.println(msg);
 }
 
 //-- Servo to set Oxygen
