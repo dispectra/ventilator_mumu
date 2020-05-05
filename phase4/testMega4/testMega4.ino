@@ -11,7 +11,7 @@
 #include <Adafruit_ADS1015.h>
 #include <Servo.h>
 
-SoftwareSerial SerialFl(A8, A9);
+SoftwareSerial SerialFl(62, 63); //A8 A9
 //== GLOBAL VARIABLES ======================================
 // Servos
 Servo servoPEEP;
@@ -49,6 +49,14 @@ float ERat = 2;
 
 int CurrentPage;
 int mode = 0;
+
+// new variables
+int PEEP_LIMIT = 5;
+int PIP_LIMIT = 100;
+bool spuriousDetected = false;
+#define warningPEEP_PIN 39
+#define ButtonResetAlarm_PIN 40
+byte alarms[9] = {0,0,0,0,0,0,0,0,0};
 
 NexNumber n7 = NexNumber(1, 19, "n7");
 NexNumber n8 = NexNumber(1, 20, "n8");
@@ -108,7 +116,7 @@ void setup() {
 	Serial.begin(115200);   // for debugging
 	Serial1.begin(57600);   // from/to Nano
 	Serial2.begin(115200);   // from/to Nextion #Updated to 115200
-	// Serial3.begin(115200); // NANO alarm
+	Serial3.begin(115200); // NANO alarm
 	SerialFl.begin(57600); // NANO FLOW
 
 	ads.begin();      // from/to ADS115 + Oxygen
@@ -125,6 +133,9 @@ void setup() {
 	servoOxigen.attach(sigServoOx);
 	pinMode(enaServoPEEP, OUTPUT);
 	pinMode(enaServoOx, OUTPUT);
+
+  // Tombol
+  pinMode(ButtonResetAlarm_PIN, INPUT_PULLUP);
 
 	nexInit();
 	bt0.attachPush(bt0PushCallback, &bt0);
@@ -205,10 +216,10 @@ void loop() {
 			exhaleStage = true;
 			readIPP = false;
 		}
-		flowUpdate();
 		pressureUpdate1();
 		oxygenUpdate();
 		if(exhaleStage) {
+      Serial.println("EXHALING");
 			//0. Cek Fighting
 			if(fighting()) {
 				digitalWrite(triggerInhalePin,LOW);
@@ -220,10 +231,11 @@ void loop() {
 				digitalWrite(warningPEEP_PIN, LOW);
         setAlarm("04_HIGH");
 			} else {
-				digitalWrite(warningPEEP_PIN, HIGH)
+				digitalWrite(warningPEEP_PIN, HIGH);
 			}
 
 		} else {  //when exhaleStage == false, or in other word, between PEEP to IPP, or in simple, when inhalation
+			Serial.println("INHALING");
 			if (pressure_float > PIP_LIMIT) { // warning pressure to nano through digital pin
 				Serial.println("WARN!!");
 				digitalWrite(warningPressure_PIN,LOW);
@@ -233,7 +245,7 @@ void loop() {
         mode = 5;
 			}
 		}
-
+    nexLoop(nex_listen_list);
 		if (CurrentPage != 1) {break;}
 		if (state == 0) {break;}
 	}
@@ -282,10 +294,10 @@ void update2Nano() {
 	                 + String(ERat) + ','
 	                 + String(RR) + '>';
 	Serial1.print(message); Serial1.flush();
-
-	message = '<' + String(state) + ','
+  Serial.println(message);
+	String message2 = '<' + String(state) + ','
 						    + String(Vti) + '>';
-	SerialFl.print(message); SerialFl.flush();
+	SerialFl.print(message2); SerialFl.flush();
 
 // Debug message
 //  Serial.print(F("Message sent to Nano:\n\t")); Serial.print(message); Serial.flush();
@@ -420,8 +432,8 @@ float calcDatasheetPressure(int x_adc) {
 
 void pressureUpdate() {
 // Read sensor output
-	pressure_float = 0.3135*ads.readADC_SingleEnded(0)-1163.1143-153.43;
-	pressure_int8 = map(int(pressure_float2), -10, 20, 0, 255);
+	pressure_float = 0; //0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
+	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 
 // Update to Nextion waveform graph
 	Serial2.print("add 1,0,");
@@ -436,8 +448,8 @@ double IPP_raw, IPP_float;
 double PEEP_raw, PEEP_float;
 
 void pressureUpdate1() {
-	pressure_float = 0.3135*ads.readADC_SingleEnded(0)-1163.1143-153.43;
-	pressure_int8 = map(int(pressure_float2), -10, 20, 0, 255);
+	pressure_float = 0; //0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
+	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 	if(pip_value < pressure_float) {
 		pip_value = pressure_float;
 	}
@@ -452,7 +464,7 @@ void pressureUpdate1() {
 
 void PEEPUpdate() {
 //  PEEP_raw = 0.3135*ads.readADC_SingleEnded(0)-1163.1143-153.43;
-	pressure_float = 0.3135*ads.readADC_SingleEnded(0)-1163.1143-153.43;
+	pressure_float = 0; //0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
 
 	Serial2.print("n11.val=");
 	Serial2.print(round(pressure_float));
@@ -475,7 +487,7 @@ void PEEPUpdate() {
 
 void IPPUpdate() {
 //  IPP_raw = analogRead(PIN_MPX5010DP_pressure);
-	IPP_float = 0.3135*ads.readADC_SingleEnded(0)-1163.1143-153.43;
+	IPP_float = 0; //0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
 	pressure_float = IPP_float;
 }
 
@@ -502,18 +514,6 @@ bool fighting(){
 	//  fight = true;
 	// }
 	return fight;
-}
-
-double inc = 0;
-double lastVol = 0;
-//-- Calculate accumulated volume -----------------------
-void calcVolumeAcc() {
-//  const byte dt = 1;/
-//Serial.println((90.1479*sqrt(-1*ads.readADC_Differential_0_1())-4852.4818-109-202));
-	inc = 0.2*(1.8 * (90.1479*sqrt(-1*ads.readADC_Differential_0_1())-4852.4818-109-202)/60 * dt) + 0.8*lastVol;
-	volumeAcc += inc;
-	lastVol = inc;
-//  Serial.println(volumeAcc);
 }
 
 //-- Send alarm mode to buzzer/alarm microcontroller ----
