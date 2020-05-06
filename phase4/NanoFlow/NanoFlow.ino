@@ -25,7 +25,7 @@ bool exhaleStage = false;
 bool updated = false;
 String bufferq[2];
 String lastData = "<0, 0>";
-bool statusON;
+bool runningState;
 
 unsigned long nowq = 0;
 unsigned long dt = 0;
@@ -48,21 +48,26 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  //0. Read Serial from Mega
   readDataFromMega();
-  statusON = 1;
-  vol_lim = 300;
 
+  //1. Read Flow Value
   flow_raw = ads.readADC_Differential_0_1();
   flow_val = calcFlow(flow_raw);
 
-   if(abs(flow_val) <= 1.7 || abs(roundf(flow_val*100.0)/100.0) == 2.39 || abs(roundf(flow_val*100.0)/100.0) == 3.20 || abs(roundf(flow_val*100.0)/100.0) == 4.01){flow_val=0;}
-///  //Serial.println(flow_val);
-  if(statusON){
+  //2. Remove Noise Values
+   if(abs(flow_val) <= 1.7
+      || abs(roundf(flow_val*100.0)/100.0) == 2.39
+      || abs(roundf(flow_val*100.0)/100.0) == 3.20
+      || abs(roundf(flow_val*100.0)/100.0) == 4.01){flow_val=0;}
+///  Serial.println(flow_val);
+
+  //3. Check State
+  if(runningState != 0){
+    //0. Check for Inhale/Exhale Timing
     if(readPEEP){
       //reset stuffs
       digitalWrite(pinSpur, HIGH);
-      digitalWrite(pinFight, HIGH);
       vol_acc = 0;
 
       // indicate INHALE
@@ -78,9 +83,11 @@ void loop() {
       readIPP = false;
     }
 
+
+    //1. EXHALE ROUTINE
     if(exhaleStage){ //fasa exhale
       if(lastState == 0){
-//        //Serial.println("EXHALE STAGE");
+        //Serial.println("EXHALE STAGE");
         lastState = 1;
       }
 
@@ -88,37 +95,36 @@ void loop() {
       if(spuriousDetect()){
         digitalWrite(pinSpur, LOW);
       }
-    } else { //fasa inhale
+    }
+    //2. INHALE ROUTINE
+    else {
       if(lastState == 1){
-//        //Serial.println("INHALE STAGE");
+        //Serial.println("INHALE STAGE");
         lastState = 0;
       }
-      //0. Cek Fighting
-      if(fightingDetect()){
-        digitalWrite(pinFight,LOW);
-      }
 
-      //1. Jaga Volume
+      //1. Hitung Volume
       dt = micros()-nowq;
       vol_acc += flow_val/60 * dt/1000;
       nowq = micros();
 
-      // ambil data
-      Serial.print(flow_raw);
-      Serial.print("\t");
-      Serial.print(flow_val);
-      Serial.print("\t");
-      Serial.println(vol_acc);
-//      delay(9); // agar pas 500 an data
-      
-//      Serial.println("====> TIME: " + String(dt));
-      //Serial.println("VOL: " + String(vol_acc));
+      //2. Jaga Volume
       if(vol_acc> vol_lim){
-//        //Serial.println("WARNING VOLUME");
+        //Serial.println("WARNING VOLUME");
         digitalWrite(pinVolWarn, LOW);
         delayMicroseconds(10);
         digitalWrite(pinVolWarn, HIGH);
       }
+
+      // KEPERLUAN AMBIL DATA --------------------------------------
+      // Serial.print(flow_raw);
+      // Serial.print("\t");
+      // Serial.print(flow_val);
+      // Serial.print("\t");
+      // Serial.println(vol_acc);
+
+      //Serial.println("====> TIME: " + String(dt));
+      //Serial.println("VOL: " + String(vol_acc));
     }
   }
 }
@@ -132,28 +138,19 @@ void readIPPQ(){readIPP = true;}
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
   float calc = (90.1479*sqrt(flow_rawq)-4852.4818-141.58 + 0.405 +2.85 - 9 + 43.38- 25.42-2.44-20.30);
-  
+
   return calc;
 }
 
 //- Detect Spurious
+// !!HOMEWORK!!
 bool spuriousDetect(){
   bool spurious = false;
-  // if(){
-  //   spurious = true;
-  // }
+   if(flow_val > 1){
+     spurious = true;
+   }
   return spurious;
 }
-
-//- Detect Fighting
-bool fightingDetect(){
-  bool fight = false;
-  // if(){
-  //   spurious = true;
-  // }
-  return fight;
-}
-
 
 //- From/to Mega
 void readDataFromMega(){
@@ -176,7 +173,7 @@ void readDataFromMega(){
 			//    //Serial.println(String(i) + ": " + bufferq[i]);
 		}
 
-		statusON = bufferq[0].toInt();
+		runningState = bufferq[0].toInt();
 		vol_lim = bufferq[1].toInt();
 
 		updated = true;

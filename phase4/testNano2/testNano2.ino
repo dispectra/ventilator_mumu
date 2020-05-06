@@ -39,19 +39,19 @@ SoftwareSerial SerialM(11,12); //RX, TX
 #define pinPEEP A1
 #define pinIPP A0
 
-#define pinWarnVol 2 //31
-#define pinWarnPres 3 //30
-#define pinSpurious A2 //29
-#define pinPresHold A3
-#define pinFight A4
+#define pinWarnVol 2 //NANO_SENSE D6
+#define pinWarnPres 3 //MEGA D30
+#define pinSpurious A2 //NANO_SENSE D7
+#define pinPresHold A3 //MEGA D39
+#define pinFight A4 //MEGA D33
 
 bool callibrated = false;
 bool updated = false;
 /////////////////////////////////////////////////////////////////////////////////////
 
 //-- Global Variables ===============================================================
-String bufferq[7];
-bool statusOn = 0;
+String bufferq[4];
+bool runningState = 0;
 bool warnVol = 0;
 bool warnPres = 0;
 int Vtidal = 0;
@@ -61,10 +61,10 @@ int RR = 0;
 bool triggerInhale = 0;
 int stateNow = 9;
 
-String lastData = "<0,0,0,0,0,0,0>";
-bool spontaneousPrev = false;
+String lastData = "<0,0,0,0>";
+bool spuriousPrev = false;
 
-unsigned long stepTidal, delayInhale, delayExhale, timeInEx;
+unsigned long now, stepTidal, delayInhale, delayExhale, timeInEx;
 float timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay;
 
 //-- SETUP =========================================================================
@@ -101,28 +101,25 @@ void setup() {
 void loop() {
 	unsigned long timeInhaleReal;
 
+	// 1. TERIMA DATA DARI MEGA: STATE, VTi, IE, RR
 	updateAllGlobalVars();
 
-	if (statusOn) {
-
+	// 2. IF RUNNING
+	if (runningState !=0 ) {
 		if(stateNow == 0) {
 			Serial.println("==> STATUS: ON");
-		} else {
-			readPEEP(1);
 		}
 
+		// 0. INDICATE INHALE START
+		readPEEP(1);
+
+		// 1. UPDATE VARIABLES
 		stepTidal = round(cekTidal(Vtidal));
 		timeBreath = (60000 / float(RR)) * 1000;
 		timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
 		timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
 		delayInhale = float(timeInhale) / float(stepTidal) / 2; // dalam microseconds
 		delayExhale = 600; // dalam microseconds
-		readPEEP(0);
-
-		if(spontaneousPrev) { stateNow = 2; Serial.println("==> STATE 2");}
-		else{stateNow = 1; Serial.println("==> STATE 1");}
-
-		spontaneousPrev = false;
 
 		Serial.println("==================");
 		Serial.println("Vol Tidal = " + String(Vtidal));
@@ -138,32 +135,44 @@ void loop() {
 		Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
 		Serial.println("----");
 
-		unsigned long now = micros();
+		readPEEP(0);
+		spuriousPrev = false;
+		now = micros();
 
-		if(stateNow == 1) { // mandatory volume
+		// MODE MANDATORY VOLUME
+		if(runningState == 1) {
+			//0. INHALE SEQ
 			Serial.println("==> INHALE SEQUENCE");
 			int stepTidal2 = Inhale();
 
-			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
+			//1. Inspiratory Pause Period
 			readIPP(1);
+			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
 
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
-
 			readIPP(0);
+
+			//2. EXHALE SEG
 			Serial.println("==> EXHALE SEQUENCE");
 			Exhale(stepTidal2);
-		} else if(stateNow == 2) { //assist volume
+		}
+		// MODE VOLUME ASSIST + CPAP
+		else if(runningState == 2) {
+			spuriousPrev = true;
+			//0. INHALE SEQ
 			Serial.println("==> INHALE SEQUENCE");
 			int stepTidal2 = Inhale2();
 
-			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
+			//1. Inspiratory Pause Period
 			readIPP(1);
+			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
 
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
-
 			readIPP(0);
+
+			//2. EXHALE SEQ
 			Serial.println("==> EXHALE SEQUENCE");
 			Exhale(stepTidal2);
 		}
@@ -171,7 +180,7 @@ void loop() {
 
 		// Sisa waktu exhale
 		while((micros()-now) < timeBreath) {
-			// 1. Geser sampai mentok
+			// 1. Geser sampai mentok (ALL)
       while(digitalRead(limitSwitchEx)){
           digitalWrite(dirPin, !dirInhale);
           digitalWrite(stepPin,HIGH);
@@ -181,12 +190,13 @@ void loop() {
       }
 
 			// 2. cek apakah terjadi spurious breath
+			// In case pas exhale mandatory ada spurious, kan ttp harus disupport pressure
 			if(checkSpurious()) {
-				spontaneousPrev = true;
+				spuriousPrev = true;
 			}
 
 			// 3. CPAP If spurious
-			if (spontaneousPrev) {
+			if (spuriousPrev) {
 				while(!checkPEEP()){ // kalau PEEP blm melewati batas
 					digitalWrite(dirPin, dirInhale);
 					digitalWrite(stepPin,HIGH);
@@ -203,7 +213,6 @@ void loop() {
 		Serial.println("----");
 		warnPres = false;
 		warnVol = false;
-
 	} else {
 		// STATUS OFF
 		readPEEP(0);
@@ -215,7 +224,6 @@ void loop() {
 
 		// Callibrate Maju & Mundur Button
 		if(digitalRead(7) == LOW) {
-
 			digitalWrite(dirPin, LOW);
 			if(digitalRead(limitSwitchIn)) {
 				Serial.println("Cal In");
@@ -366,7 +374,7 @@ void Exhale(int stepTidalE) {
 
 		delayMicroseconds(delayExhale2);
 		if(checkSpurious()) {
-			spontaneousPrev = true;
+			spuriousPrev = true;
 		}
 
 		if(digitalRead(limitSwitchEx)) {
@@ -376,7 +384,7 @@ void Exhale(int stepTidalE) {
 		delayMicroseconds(delayExhale2);
 //
 		if(checkSpurious()) {
-			spontaneousPrev = true;
+			spuriousPrev = true;
 		}
 	}
 
@@ -474,14 +482,14 @@ void updateAllGlobalVars(){
 		int indexStart = 0;
 		int indexEnd = 0;
 
-		for(int i = 0; i<7; i++) {
+		for(int i = 0; i<4; i++) {
 			indexEnd = received.indexOf(",", indexStart);
 			bufferq[i] = received.substring(indexStart, indexEnd);
 			indexStart = indexEnd+1;
 			//    Serial.println(String(i) + ": " + bufferq[i]);
 		}
 
-		statusOn = bufferq[0].toInt();
+		runningState = bufferq[0].toInt();
 		Vtidal = bufferq[1].toInt();
 		ERat = bufferq[2].toFloat();
 		RR = bufferq[3].toInt();
