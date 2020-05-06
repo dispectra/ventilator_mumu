@@ -56,10 +56,15 @@ void loop() {
   flow_val = calcFlow(flow_raw);
 
   //2. Remove Noise Values
-   if(abs(flow_val) <= 1.7
-      || abs(roundf(flow_val*100.0)/100.0) == 2.39
-      || abs(roundf(flow_val*100.0)/100.0) == 3.20
-      || abs(roundf(flow_val*100.0)/100.0) == 4.01){flow_val=0;}
+  if(abs(flow_val) <= 1
+      || abs(roundf(flow_val*100.0)/100.0) == 3.24
+      || abs(roundf(flow_val*100.0)/100.0) == 0.81
+      || abs(roundf(flow_val*100.0)/100.0) == 4.06
+      || abs(roundf(flow_val*100.0)/100.0) == 4.87
+      || abs(roundf(flow_val*100.0)/100.0) == 5.68
+      || abs(roundf(flow_val*100.0)/100.0) == 2.43
+      || abs(roundf(flow_val*100.0)/100.0) == 1.62
+      ){flow_val=0;}
 ///  Serial.println(flow_val);
 
   //3. Check State
@@ -137,7 +142,7 @@ void readIPPQ(){readIPP = true;}
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = (90.1479*sqrt(flow_rawq)-4852.4818-141.58 + 0.405 +2.85 - 9 + 43.38- 25.42-2.44-20.30);
+  float calc = (90.1479*sqrt(flow_rawq)-5011.9318);
 
   return calc;
 }
