@@ -14,7 +14,8 @@ Adafruit_ADS1115 ads;
 #define pinFight 8
 
 // GLOBAL VARIABLES
-float flow_raw, flow_val;
+double flow_raw, flow_val;
+double flow_val2, last_val;
 int vol_lim;
 unsigned long now;
 double vol_acc = 0;
@@ -66,7 +67,9 @@ void loop() {
       || abs(roundf(flow_val*100.0)/100.0) == 1.62
       ){flow_val=0;}
 ///  Serial.println(flow_val);
-
+  flow_val2 = 0.5*flow_val + 0.5*last_val;
+  last_val = flow_val;
+  
   //3. Check State
   if(runningState != 0){
     //0. Check for Inhale/Exhale Timing
@@ -110,7 +113,7 @@ void loop() {
 
       //1. Hitung Volume
       dt = micros()-nowq;
-      vol_acc += flow_val/60 * dt/1000;
+      vol_acc += flow_val2/60 * dt/1000;
       nowq = micros();
 
       //2. Jaga Volume
