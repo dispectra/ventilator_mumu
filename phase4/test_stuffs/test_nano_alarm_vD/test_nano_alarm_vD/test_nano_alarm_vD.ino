@@ -24,6 +24,7 @@ void getCommand() {
       //Serial.println(String(i) + ": " + bufferq[i]);
     }
   }
+  Serial.println(command); Serial.flush();
 }
 
 
@@ -50,7 +51,7 @@ String readMega() {
   return packet;
 }
 
-#define BUZZER_0_PIN 5
+#define BUZZER_0_PIN A0
 unsigned long buzzer0_begin = 0;
 bool buzzer0_current_state, buzzer0_prev_state = false;
 void buzzer0() {
@@ -78,7 +79,7 @@ void buzzer0_beep_on() {digitalWrite(BUZZER_0_PIN, HIGH);}
 void buzzer0_beep_off() {digitalWrite(BUZZER_0_PIN,LOW);}
 
 
-#define BUZZER_1_PIN 6
+#define BUZZER_1_PIN A1
 unsigned long buzzer1_begin = 0;
 bool buzzer1_current_state, buzzer1_prev_state = false;
 void buzzer1() {
@@ -88,9 +89,7 @@ void buzzer1() {
   
   if (buzzer1_current_state == true && buzzer1_prev_state == true) {
     buzzer1_phase = (now - buzzer1_begin)% buzzer1_period;
-    if (buzzer1_phase < 250) {buzzer1_beep_off();}
-    else if (buzzer1_phase < 500) {buzzer1_beep_on();}
-    else if (buzzer1_phase < 750) {buzzer1_beep_off();}
+    if (buzzer1_phase < 500) {buzzer1_beep_off();}
     else {buzzer1_beep_on();}
   }
   else if (buzzer1_current_state == true && buzzer1_prev_state == false) {
@@ -104,46 +103,46 @@ void buzzer1() {
 // Active buzzer
 void buzzer1_beep_on() {digitalWrite(BUZZER_1_PIN, HIGH);}
 void buzzer1_beep_off() {digitalWrite(BUZZER_1_PIN,LOW);}
+//
+//
+//#define BUZZER_2_PIN 7
+//unsigned long buzzer2_begin = 0;
+//bool buzzer2_current_state, buzzer2_prev_state = false;
+//void buzzer2() {
+//  unsigned long now = millis();
+//  unsigned int buzzer2_period = 1000;
+//  unsigned int buzzer2_phase = 0;
+//  
+//  if (buzzer2_current_state == true && buzzer2_prev_state == true) {
+//    buzzer2_phase = (now - buzzer2_begin)% buzzer2_period;
+//    if (buzzer2_phase < 250) {buzzer2_beep_off();}
+//    else if (buzzer2_phase < 500) {buzzer2_beep_on();}
+//    else if (buzzer2_phase < 750) {buzzer2_beep_off();}
+//    else {buzzer2_beep_on();}
+//  }
+//  else if (buzzer2_current_state == true && buzzer2_prev_state == false) {
+//    buzzer2_begin = millis();
+//  }
+//  else if (buzzer2_current_state == false && buzzer2_prev_state == true) {
+//    buzzer2_beep_off();
+//  }
+//  buzzer2_prev_state = buzzer2_current_state;
+//}
+//// Active buzzer
+//void buzzer2_beep_on() {digitalWrite(BUZZER_2_PIN, HIGH);}
+//void buzzer2_beep_off() {digitalWrite(BUZZER_2_PIN,LOW);}
 
 
-#define BUZZER_2_PIN 7
-unsigned long buzzer2_begin = 0;
-bool buzzer2_current_state, buzzer2_prev_state = false;
-void buzzer2() {
-  unsigned long now = millis();
-  unsigned int buzzer2_period = 1000;
-  unsigned int buzzer2_phase = 0;
-  
-  if (buzzer2_current_state == true && buzzer2_prev_state == true) {
-    buzzer2_phase = (now - buzzer2_begin)% buzzer2_period;
-    if (buzzer2_phase < 250) {buzzer2_beep_off();}
-    else if (buzzer2_phase < 500) {buzzer2_beep_on();}
-    else if (buzzer2_phase < 750) {buzzer2_beep_off();}
-    else {buzzer2_beep_on();}
-  }
-  else if (buzzer2_current_state == true && buzzer2_prev_state == false) {
-    buzzer2_begin = millis();
-  }
-  else if (buzzer2_current_state == false && buzzer2_prev_state == true) {
-    buzzer2_beep_off();
-  }
-  buzzer2_prev_state = buzzer2_current_state;
-}
-// Active buzzer
-void buzzer2_beep_on() {digitalWrite(BUZZER_2_PIN, HIGH);}
-void buzzer2_beep_off() {digitalWrite(BUZZER_2_PIN,LOW);}
-
-
-#define SILENCE_BUTTON_PIN 3
-#define ALARM_0_LED_PIN 20
-#define ALARM_1_LED_PIN 21
-#define ALARM_2_LED_PIN 22
-#define ALARM_3_LED_PIN 23
-#define ALARM_4_LED_PIN 24
-#define ALARM_5_LED_PIN 25
-#define ALARM_6_LED_PIN 26
-#define ALARM_7_LED_PIN 27
-#define ALARM_8_LED_PIN 28
+#define SILENCE_BUTTON_PIN A3
+#define ALARM_0_LED_PIN 2
+#define ALARM_1_LED_PIN 3
+#define ALARM_2_LED_PIN 4
+#define ALARM_3_LED_PIN 5
+#define ALARM_4_LED_PIN 6
+#define ALARM_5_LED_PIN 7
+#define ALARM_6_LED_PIN 8
+#define ALARM_7_LED_PIN 9
+#define ALARM_8_LED_PIN 10
 
 bool silence_state = false;
 unsigned long silence_begin = 0;
@@ -155,6 +154,18 @@ void setup() {
   
   // Serial from mega begin
   SerialMega.begin(115200);
+  pinMode(SILENCE_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(ALARM_0_LED_PIN, OUTPUT);
+  pinMode(ALARM_1_LED_PIN, OUTPUT);
+  pinMode(ALARM_2_LED_PIN, OUTPUT);
+  pinMode(ALARM_3_LED_PIN, OUTPUT);
+  pinMode(ALARM_4_LED_PIN, OUTPUT);
+  pinMode(ALARM_5_LED_PIN, OUTPUT);
+  pinMode(ALARM_6_LED_PIN, OUTPUT);
+  pinMode(ALARM_7_LED_PIN, OUTPUT);
+  pinMode(ALARM_8_LED_PIN, OUTPUT);
+  pinMode(BUZZER_0_PIN, OUTPUT);
+  pinMode(BUZZER_1_PIN, OUTPUT);
 }
 
 
@@ -164,29 +175,33 @@ void loop() {
   getCommand();
   
   // Read alarm silence button
-  if (digitalRead(SILENCE_BUTTON_PIN)) {
+  if (!digitalRead(SILENCE_BUTTON_PIN)) {
     silence_state = true;
     silence_begin = millis();
   }
   
   // Silence timeout check
   if (millis() - silence_begin > silence_timeout) {silence_state = false;}
+  Serial.println("Silence state is: " + String(silence_state));
   
   // Buzzer routine
   if (silence_state) {
     buzzer0_beep_off();
     buzzer1_beep_off();
-    buzzer2_beep_off();
+//    buzzer2_beep_off();
   } else {
     // Read needed buzzer state
     buzzer0_current_state = alarm[0] || alarm[1] || alarm[2] || alarm[3];   // alarm type HIGH
     buzzer1_current_state = alarm[4] || alarm[5] || alarm[6] || alarm[7];   // alarm type MEDIUM
-    buzzer2_current_state = alarm[8];
+//    buzzer2_current_state = alarm[8];
+
+    Serial.println("buzzer0 state: " + String(buzzer0_current_state));
+    Serial.println("buzzer1 state: " + String(buzzer1_current_state));
 
     // Run buzzer 
     buzzer0();
     buzzer1();
-    buzzer2();
+//    buzzer2();
   }
   
   // Pass it to LED routine
