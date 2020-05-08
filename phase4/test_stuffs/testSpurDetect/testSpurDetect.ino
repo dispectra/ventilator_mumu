@@ -21,6 +21,8 @@ void setup() {
   zeroFlowSensor();
 }
 bool asd=false;
+bool asd2 = true;
+
 void loop() {
   // put your main code here, to run repeatedly:
 flow_raw = ads.readADC_Differential_0_1();
@@ -65,8 +67,14 @@ flow_raw = ads.readADC_Differential_0_1();
 
 
    Serial.println(flow_val2);
-   if(flow_val2>1){
+   if(flow_val2>10){
      Serial.println("SPURIOUS");
+     while(digitalRead(2) == HIGH){
+      if(asd2){
+        Serial.print(".");
+        asd2 = false;
+      }
+     }
    }
 
   }
