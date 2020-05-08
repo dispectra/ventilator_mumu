@@ -1,6 +1,8 @@
+#include <ArduinoSort.h>
 #include <SoftwareSerial.h>
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
+
 
 SoftwareSerial SerialM(11,12);
 Adafruit_ADS1115 ads;
@@ -33,6 +35,7 @@ unsigned long dt = 0;
 bool lastState = 0; //0 Inhale, 1 Exhale
 float offset = 0;
 bool warned = false;
+int buffsize = 50;
 
 void setup() {
   // put your setup code here, to run once:
@@ -50,33 +53,37 @@ void setup() {
   pinMode(pinVolWarn, OUTPUT);
   digitalWrite(pinVolWarn, HIGH);
   nowq = micros();
+
+  zeroFlowSensor();
 }
 
 void loop() {
   //0. Read Serial from Mega
   readDataFromMega();
 
-  //1. Read Flow Value
-  flow_raw = ads.readADC_Differential_0_1();
-  flow_val = calcFlow(flow_raw) + offset;
-
-  //2. Remove Noise Values
-  if(abs(flow_val) <= 1
-      || abs(roundf(flow_val*100.0)/100.0) == 3.24
-      || abs(roundf(flow_val*100.0)/100.0) == 0.81
-      || abs(roundf(flow_val*100.0)/100.0) == 4.06
-      || abs(roundf(flow_val*100.0)/100.0) == 4.87
-      || abs(roundf(flow_val*100.0)/100.0) == 5.68
-      || abs(roundf(flow_val*100.0)/100.0) == 2.43
-      || abs(roundf(flow_val*100.0)/100.0) == 1.62
-      ){flow_val=0;}
-///  Serial.println(flow_val);
-  flow_val2 = 0.5*flow_val + 0.5*last_val;
-  last_val = flow_val;
-
-  //3. Check State
+  //1. Check State
   if(runningState != 0){
-    //0. Check for Inhale/Exhale Timing
+    //0a. Read Flow Value
+    flow_raw = ads.readADC_Differential_0_1();
+    flow_val = calcFlow(flow_raw) + offset;
+  
+    //0b. Remove Noise Values
+    if(abs(flow_val) <= 1
+        || abs(roundf(flow_val*100.0)/100.0) == 3.24
+        || abs(roundf(flow_val*100.0)/100.0) == 0.81
+        || abs(roundf(flow_val*100.0)/100.0) == 4.06
+        || abs(roundf(flow_val*100.0)/100.0) == 4.87
+        || abs(roundf(flow_val*100.0)/100.0) == 5.68
+        || abs(roundf(flow_val*100.0)/100.0) == 2.43
+        || abs(roundf(flow_val*100.0)/100.0) == 1.62
+        || abs(roundf(flow_val*100.0)/100.0) == 1.63
+        ){flow_val=0;}
+  
+  ///  Serial.println(flow_val);
+    flow_val2 = 0.5*flow_val + 0.5*last_val;
+    last_val = flow_val;
+  
+    //1. Check for Inhale/Exhale Timing
     if(readPEEP){
       //reset stuffs
       digitalWrite(pinSpur, HIGH);
@@ -96,7 +103,7 @@ void loop() {
     }
 
 
-    //1. EXHALE ROUTINE
+    //2. EXHALE ROUTINE
     if(exhaleStage){ //fasa exhale
       digitalWrite(pinVolWarn, HIGH);
       if(lastState == 0){
@@ -111,7 +118,7 @@ void loop() {
 
       warned = false;
     }
-    //2. INHALE ROUTINE
+    //3. INHALE ROUTINE
     else {
       if(lastState == 1){
         Serial.println("INHALE STAGE");
@@ -120,7 +127,7 @@ void loop() {
 
       //1. Hitung Volume
       dt = micros()-nowq;
-      vol_acc += 30; //flow_val2/60 * dt/1000;
+      vol_acc += flow_val2/60 * dt/1000;
       nowq = micros();
 
       //2. Jaga Volume
@@ -143,11 +150,52 @@ void loop() {
       Serial.println("VOL: " + String(vol_acc));
     }
   } else { //OFF Condition
-    offset = -1 * calcFlow(ads.readADC_Differential_0_1());
+    zeroFlowSensor();
   }
 }
 
 //== FUNCTIONS ------------------------------------------------------
+void zeroFlowSensor(){
+  //0. Create buffer for value and histogram
+  float val[buffsize];
+  float lastVal;
+  int index_terpilih = 0;
+  int mode_count = 0;
+  int valcount = 0;
+
+  //1. Ambil x data
+  for(int i=0; i<buffsize; i++){
+    val[i] = calcFlow(ads.readADC_Differential_0_1())+offset;
+  }
+
+  sortArray(val, buffsize);
+
+  //2. create histogram
+  for (int i=0; i<buffsize; i++){
+    if(lastVal != val[i]){
+      lastVal = val[i];
+      valcount = countOccurances(val, val[i]);
+      if(valcount>=mode_count){
+        mode_count = valcount;
+        index_terpilih = i;
+      }
+    }
+  }
+
+  //3. Return Mode
+  offset += -1*val[index_terpilih];
+  Serial.println("OFFSET : " + String(offset));
+}
+
+int countOccurances(float val[], float q){
+  int count = 0;
+  for(int i=0; i<buffsize; i++){
+    if(val[i] == q){
+      count++;
+    }
+  }
+  return count;
+}
 
 //- Interrupts
 void readPEEPQ(){readPEEP = true;}
@@ -155,7 +203,7 @@ void readIPPQ(){readIPP = true;}
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = (90.1479*sqrt(flow_rawq)-5011.9318+35.80+500);
+  float calc = (90.1479*sqrt(flow_rawq)-5011.9318+35.80);
 
   return calc;
 }
