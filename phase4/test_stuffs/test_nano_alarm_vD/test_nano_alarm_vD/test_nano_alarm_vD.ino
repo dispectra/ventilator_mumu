@@ -146,7 +146,7 @@ void buzzer1_beep_off() {digitalWrite(BUZZER_1_PIN,LOW);}
 
 bool silence_state = false;
 unsigned long silence_begin = 0;
-#define silence_timeout 20000
+#define silence_timeout 120000
 
 void setup() {
   // Serial debug begin
@@ -175,9 +175,14 @@ void loop() {
   getCommand();
   
   // Read alarm silence button
-  if (!digitalRead(SILENCE_BUTTON_PIN)) {
+  if (!digitalRead(SILENCE_BUTTON_PIN) && silence_state == false) {
     silence_state = true;
     silence_begin = millis();
+  }
+
+  if (!digitalRead(SILENCE_BUTTON_PIN) && silence_state == true && (millis() - silence_begin > 200)) {
+    silence_state = false;
+    silence_begin = 0;
   }
   
   // Silence timeout check
