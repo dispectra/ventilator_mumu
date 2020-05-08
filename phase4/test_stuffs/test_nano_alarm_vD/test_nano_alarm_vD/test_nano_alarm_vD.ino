@@ -51,58 +51,106 @@ String readMega() {
   return packet;
 }
 
-#define BUZZER_0_PIN A0
-unsigned long buzzer0_begin = 0;
-bool buzzer0_current_state, buzzer0_prev_state = false;
-void buzzer0() {
+
+#define BUZZER_SINGLE_PIN A0
+unsigned long buzzer_SINGLE_begin = 0;
+bool buzzer0_current_state, buzzer1_current_state, buzzer2_current_state = false;
+byte buzzer_SINGLE_current_state, buzzer_SINGLE_prev_state = 0;   // 1 = HIGH, 2 = MEDIUM, 3 = LOW
+void buzzer_SINGLE() {
   unsigned long now = millis();
-  unsigned int buzzer0_period = 1000;
-  unsigned int buzzer0_phase = 0;
+  unsigned int buzzer_SINGLE_period = 1000;
+  unsigned int buzzer_SINGLE_phase = 0;
   
-  if (buzzer0_current_state == true && buzzer0_prev_state == true) {
-    buzzer0_phase = (now - buzzer0_begin)% buzzer0_period;
-    if (buzzer0_phase < 250) {buzzer0_beep_off();}
-    else if (buzzer0_phase < 500) {buzzer0_beep_on();}
-    else if (buzzer0_phase < 750) {buzzer0_beep_off();}
-    else {buzzer0_beep_on();}
+  if (buzzer_SINGLE_current_state > 0 && buzzer_SINGLE_prev_state == 0) {
+    buzzer_SINGLE_begin = millis();
   }
-  else if (buzzer0_current_state == true && buzzer0_prev_state == false) {
-    buzzer0_begin = millis();
+
+  // LOW alarm
+  if (buzzer_SINGLE_current_state == 1 && buzzer_SINGLE_prev_state == 1) {
+    buzzer_SINGLE_phase = (now - buzzer_SINGLE_begin)% buzzer_SINGLE_period;
+    if (buzzer_SINGLE_phase < 250) {buzzer_SINGLE_beep_off();}
+    else if (buzzer_SINGLE_phase < 500) {buzzer_SINGLE_beep_on();}
+    else if (buzzer_SINGLE_phase < 750) {buzzer_SINGLE_beep_off();}
+    else {buzzer_SINGLE_beep_on();}
   }
-  else if (buzzer0_current_state == false && buzzer0_prev_state == true) {
-    buzzer0_beep_off();
+
+  // MEDIUM alarm
+  if (buzzer_SINGLE_current_state == 2 && buzzer_SINGLE_prev_state == 2) {
+    buzzer_SINGLE_phase = (now - buzzer_SINGLE_begin)% buzzer_SINGLE_period;
+    if (buzzer_SINGLE_phase < 500) {buzzer_SINGLE_beep_off();}
+    else {buzzer_SINGLE_beep_on();}
   }
-  buzzer0_prev_state = buzzer0_current_state;
+
+  // HIGH alarm
+  if (buzzer_SINGLE_current_state == 3 && buzzer_SINGLE_prev_state == 3) {
+    buzzer_SINGLE_phase = (now - buzzer_SINGLE_begin)% buzzer_SINGLE_period;
+    if (buzzer_SINGLE_phase < 250) {buzzer_SINGLE_beep_off();}
+    else {buzzer_SINGLE_beep_on();}
+  }
+  
+  if (buzzer_SINGLE_current_state == 0 && buzzer_SINGLE_prev_state > 0) {
+    buzzer_SINGLE_beep_off();
+  }
+  
+  buzzer_SINGLE_prev_state = buzzer_SINGLE_current_state;
 }
 // Active buzzer
-void buzzer0_beep_on() {digitalWrite(BUZZER_0_PIN, HIGH);}
-void buzzer0_beep_off() {digitalWrite(BUZZER_0_PIN,LOW);}
+void buzzer_SINGLE_beep_on() {digitalWrite(BUZZER_SINGLE_PIN, HIGH);}
+void buzzer_SINGLE_beep_off() {digitalWrite(BUZZER_SINGLE_PIN,LOW);}
 
 
-#define BUZZER_1_PIN A1
-unsigned long buzzer1_begin = 0;
-bool buzzer1_current_state, buzzer1_prev_state = false;
-void buzzer1() {
-  unsigned long now = millis();
-  unsigned int buzzer1_period = 1000;
-  unsigned int buzzer1_phase = 0;
-  
-  if (buzzer1_current_state == true && buzzer1_prev_state == true) {
-    buzzer1_phase = (now - buzzer1_begin)% buzzer1_period;
-    if (buzzer1_phase < 500) {buzzer1_beep_off();}
-    else {buzzer1_beep_on();}
-  }
-  else if (buzzer1_current_state == true && buzzer1_prev_state == false) {
-    buzzer1_begin = millis();
-  }
-  else if (buzzer1_current_state == false && buzzer1_prev_state == true) {
-    buzzer1_beep_off();
-  }
-  buzzer1_prev_state = buzzer1_current_state;
-}
-// Active buzzer
-void buzzer1_beep_on() {digitalWrite(BUZZER_1_PIN, HIGH);}
-void buzzer1_beep_off() {digitalWrite(BUZZER_1_PIN,LOW);}
+//#define BUZZER_0_PIN A0
+//unsigned long buzzer0_begin = 0;
+//bool buzzer0_current_state, buzzer0_prev_state = false;
+//void buzzer0() {
+//  unsigned long now = millis();
+//  unsigned int buzzer0_period = 1000;
+//  unsigned int buzzer0_phase = 0;
+//  
+//  if (buzzer0_current_state == true && buzzer0_prev_state == true) {
+//    buzzer0_phase = (now - buzzer0_begin)% buzzer0_period;
+//    if (buzzer0_phase < 250) {buzzer0_beep_off();}
+//    else if (buzzer0_phase < 500) {buzzer0_beep_on();}
+//    else if (buzzer0_phase < 750) {buzzer0_beep_off();}
+//    else {buzzer0_beep_on();}
+//  }
+//  else if (buzzer0_current_state == true && buzzer0_prev_state == false) {
+//    buzzer0_begin = millis();
+//  }
+//  else if (buzzer0_current_state == false && buzzer0_prev_state == true) {
+//    buzzer0_beep_off();
+//  }
+//  buzzer0_prev_state = buzzer0_current_state;
+//}
+//// Active buzzer
+//void buzzer0_beep_on() {digitalWrite(BUZZER_0_PIN, HIGH);}
+//void buzzer0_beep_off() {digitalWrite(BUZZER_0_PIN,LOW);}
+//
+//
+//#define BUZZER_1_PIN A1
+//unsigned long buzzer1_begin = 0;
+//bool buzzer1_current_state, buzzer1_prev_state = false;
+//void buzzer1() {
+//  unsigned long now = millis();
+//  unsigned int buzzer1_period = 1000;
+//  unsigned int buzzer1_phase = 0;
+//  
+//  if (buzzer1_current_state == true && buzzer1_prev_state == true) {
+//    buzzer1_phase = (now - buzzer1_begin)% buzzer1_period;
+//    if (buzzer1_phase < 500) {buzzer1_beep_off();}
+//    else {buzzer1_beep_on();}
+//  }
+//  else if (buzzer1_current_state == true && buzzer1_prev_state == false) {
+//    buzzer1_begin = millis();
+//  }
+//  else if (buzzer1_current_state == false && buzzer1_prev_state == true) {
+//    buzzer1_beep_off();
+//  }
+//  buzzer1_prev_state = buzzer1_current_state;
+//}
+//// Active buzzer
+//void buzzer1_beep_on() {digitalWrite(BUZZER_1_PIN, HIGH);}
+//void buzzer1_beep_off() {digitalWrite(BUZZER_1_PIN,LOW);}
 //
 //
 //#define BUZZER_2_PIN 7
@@ -164,8 +212,10 @@ void setup() {
   pinMode(ALARM_6_LED_PIN, OUTPUT);
   pinMode(ALARM_7_LED_PIN, OUTPUT);
   pinMode(ALARM_8_LED_PIN, OUTPUT);
-  pinMode(BUZZER_0_PIN, OUTPUT);
-  pinMode(BUZZER_1_PIN, OUTPUT);
+  pinMode(BUZZER_SINGLE_PIN, OUTPUT);
+//  pinMode(BUZZER_0_PIN, OUTPUT);
+//  pinMode(BUZZER_1_PIN, OUTPUT);
+//  pinMode(BUZZER_2_PIN, OUTPUT);
 }
 
 
@@ -187,25 +237,35 @@ void loop() {
   
   // Silence timeout check
   if (millis() - silence_begin > silence_timeout) {silence_state = false;}
-  Serial.println("Silence state is: " + String(silence_state));
+  Serial.println("Silence state is: " + String(silence_state)); Serial.flush();
   
   // Buzzer routine
   if (silence_state) {
-    buzzer0_beep_off();
-    buzzer1_beep_off();
+    buzzer_SINGLE_beep_off();
+//    buzzer0_beep_off();
+//    buzzer1_beep_off();
 //    buzzer2_beep_off();
   } else {
     // Read needed buzzer state
+    
     buzzer0_current_state = alarm[0] || alarm[1] || alarm[2] || alarm[3];   // alarm type HIGH
     buzzer1_current_state = alarm[4] || alarm[5] || alarm[6] || alarm[7];   // alarm type MEDIUM
-//    buzzer2_current_state = alarm[8];
+    buzzer2_current_state = alarm[8]; // alarm type LOW
 
-    Serial.println("buzzer0 state: " + String(buzzer0_current_state));
-    Serial.println("buzzer1 state: " + String(buzzer1_current_state));
+    if (buzzer0_current_state) {buzzer_SINGLE_current_state = 3;}
+    else if (buzzer1_current_state) {buzzer_SINGLE_current_state = 2;}
+    else if (buzzer2_current_state) {buzzer_SINGLE_current_state = 1;}
+    else {buzzer_SINGLE_current_state = 0;}
+
+    Serial.println("buzzer0 (HIGH) state: " + String(buzzer0_current_state)); Serial.flush();
+    Serial.println("buzzer1 (MEDIUM) state: " + String(buzzer1_current_state)); Serial.flush();
+    Serial.println("buzzer2 (LOW) state: " + String(buzzer2_current_state)); Serial.flush();
+    Serial.println("buzzer_SINGLE state (1 = LOW, 2 = MEDIUM, 3 = HIGH): " + String(buzzer_SINGLE_current_state)); Serial.flush();
 
     // Run buzzer 
-    buzzer0();
-    buzzer1();
+    buzzer_SINGLE();
+//    buzzer0();
+//    buzzer1();
 //    buzzer2();
   }
   
