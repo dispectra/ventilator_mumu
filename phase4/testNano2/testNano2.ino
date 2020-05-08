@@ -51,7 +51,7 @@ bool updated = false;
 
 //-- Global Variables ===============================================================
 String bufferq[4];
-bool runningState = 0;
+int runningState = 0;
 bool warnVol = 0;
 bool warnPres = 0;
 int Vtidal = 0;
@@ -76,6 +76,7 @@ void setup() {
 	initDelay = 1200;
 
 	//////////// BREATHING PART //////////////////
+	pinMode(enaPin, OUTPUT);
 	pinMode(dirPin, OUTPUT);
 	pinMode(stepPin, OUTPUT);
 	pinMode(limitSwitchIn, INPUT_PULLUP);
@@ -106,6 +107,8 @@ void loop() {
 
 	// 2. IF RUNNING
 	if (runningState !=0 ) {
+		digitalWrite(enaPin, HIGH);
+
 		if(stateNow == 0) {
 			Serial.println("==> STATUS: ON");
 		}
@@ -135,12 +138,14 @@ void loop() {
 		Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
 		Serial.println("----");
 
+
 		readPEEP(0);
 		spuriousPrev = false;
 		now = micros();
 
 		// MODE MANDATORY VOLUME
 		if(runningState == 1) {
+      Serial.println("-> MOD 1");
 			//0. INHALE SEQ
 			Serial.println("==> INHALE SEQUENCE");
 			int stepTidal2 = Inhale();
@@ -159,6 +164,7 @@ void loop() {
 		}
 		// MODE VOLUME ASSIST + CPAP
 		else if(runningState == 2) {
+      Serial.println("-> MOD 2");
 			spuriousPrev = true;
 			//0. INHALE SEQ
 			Serial.println("==> INHALE SEQUENCE");
@@ -181,7 +187,7 @@ void loop() {
 		// Sisa waktu exhale
 		while((micros()-now) < timeBreath) {
 			// 1. Geser sampai mentok (ALL)
-      while(digitalRead(limitSwitchEx)){
+      if(digitalRead(limitSwitchEx)){
           digitalWrite(dirPin, !dirInhale);
           digitalWrite(stepPin,HIGH);
           delayMicroseconds(1000);
@@ -197,12 +203,16 @@ void loop() {
 
 			// 3. CPAP If spurious
 			if (spuriousPrev) {
-				while(!checkPEEP()){ // kalau PEEP blm melewati batas
-					digitalWrite(dirPin, dirInhale);
-					digitalWrite(stepPin,HIGH);
-					delayMicroseconds(1000);
-					digitalWrite(stepPin,LOW);
-					delayMicroseconds(1000);
+//      Serial.println(checkPEEP());/
+				while(checkPEEP()){ // kalau PEEP blm melewati batas
+//        Serial.println(checkPEEP());/
+          if(digitalRead(limitSwitchIn)){
+  					digitalWrite(dirPin, dirInhale);
+  					digitalWrite(stepPin,HIGH);
+  					delayMicroseconds(1000);
+  					digitalWrite(stepPin,LOW);
+  					delayMicroseconds(1000);
+          }
 				}
 			}
 		}
@@ -217,6 +227,7 @@ void loop() {
 		// STATUS OFF
 		readPEEP(0);
 		readIPP(0);
+		digitalWrite(enaPin, LOW);
 		if(stateNow !=0) {
 			Serial.println("==> STATUS: OFF"); Serial.flush();
 			stateNow = 0;
@@ -542,12 +553,13 @@ bool checkPEEP(){
 
 void warnVolQ(){
 	warnVol = true;
-// Serial.println("WARNING VOLUME !!!!!!!!!!!!!!!!!!!!!!");
+ Serial.println("WARNING VOLUME !!!!!!!!!!!!!!!!!!!!!!");
+ // delay(1000);
 }
 
 void warnPresQ(){
 	warnPres = true;
-//  Serial.println("WARNING PRESSURE !!!!!!!!!!!!!!!!!!!!!!");
+  Serial.println("WARNING PRESSURE !!!!!!!!!!!!!!!!!!!!!!");
 }
 
 bool checkPressure(){

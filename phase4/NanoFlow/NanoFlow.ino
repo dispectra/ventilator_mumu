@@ -6,8 +6,8 @@ SoftwareSerial SerialM(11,12);
 Adafruit_ADS1115 ads;
 
 // PIN LIST
-#define pinPEEP 2
-#define pinIPP 3
+#define pinPEEP 3
+#define pinIPP 2
 
 #define pinVolWarn 6
 #define pinSpur 7
@@ -31,6 +31,8 @@ bool runningState;
 unsigned long nowq = 0;
 unsigned long dt = 0;
 bool lastState = 0; //0 Inhale, 1 Exhale
+float offset = 0;
+bool warned = false;
 
 void setup() {
   // put your setup code here, to run once:
@@ -45,6 +47,8 @@ void setup() {
   pinMode(pinIPP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(pinIPP), readIPPQ, FALLING);
 
+  pinMode(pinVolWarn, OUTPUT);
+  digitalWrite(pinVolWarn, HIGH);
   nowq = micros();
 }
 
@@ -54,7 +58,7 @@ void loop() {
 
   //1. Read Flow Value
   flow_raw = ads.readADC_Differential_0_1();
-  flow_val = calcFlow(flow_raw);
+  flow_val = calcFlow(flow_raw) + offset;
 
   //2. Remove Noise Values
   if(abs(flow_val) <= 1
@@ -69,7 +73,7 @@ void loop() {
 ///  Serial.println(flow_val);
   flow_val2 = 0.5*flow_val + 0.5*last_val;
   last_val = flow_val;
-  
+
   //3. Check State
   if(runningState != 0){
     //0. Check for Inhale/Exhale Timing
@@ -94,8 +98,9 @@ void loop() {
 
     //1. EXHALE ROUTINE
     if(exhaleStage){ //fasa exhale
+      digitalWrite(pinVolWarn, HIGH);
       if(lastState == 0){
-        //Serial.println("EXHALE STAGE");
+        Serial.println("EXHALE STAGE");
         lastState = 1;
       }
 
@@ -103,25 +108,28 @@ void loop() {
       if(spuriousDetect()){
         digitalWrite(pinSpur, LOW);
       }
+
+      warned = false;
     }
     //2. INHALE ROUTINE
     else {
       if(lastState == 1){
-        //Serial.println("INHALE STAGE");
+        Serial.println("INHALE STAGE");
         lastState = 0;
       }
 
       //1. Hitung Volume
       dt = micros()-nowq;
-      vol_acc += flow_val2/60 * dt/1000;
+      vol_acc += 30; //flow_val2/60 * dt/1000;
       nowq = micros();
 
       //2. Jaga Volume
-      if(vol_acc> vol_lim){
-        //Serial.println("WARNING VOLUME");
+      if(vol_acc> vol_lim && !warned){
+        Serial.println("WARNING VOLUME");
         digitalWrite(pinVolWarn, LOW);
-        delayMicroseconds(10);
+        delayMicroseconds(1000);
         digitalWrite(pinVolWarn, HIGH);
+        warned = true;
       }
 
       // KEPERLUAN AMBIL DATA --------------------------------------
@@ -131,9 +139,11 @@ void loop() {
       // Serial.print("\t");
       // Serial.println(vol_acc);
 
-      //Serial.println("====> TIME: " + String(dt));
-      //Serial.println("VOL: " + String(vol_acc));
+      Serial.println("====> TIME: " + String(dt));
+      Serial.println("VOL: " + String(vol_acc));
     }
+  } else { //OFF Condition
+    offset = -1 * calcFlow(ads.readADC_Differential_0_1());
   }
 }
 
@@ -145,7 +155,7 @@ void readIPPQ(){readIPP = true;}
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = (90.1479*sqrt(flow_rawq)-5011.9318);
+  float calc = (90.1479*sqrt(flow_rawq)-5011.9318+35.80+500);
 
   return calc;
 }
@@ -166,8 +176,8 @@ void readDataFromMega(){
 
 //  //Serial.println(updated);
 	if(updated == false) {
-		//Serial.print("Received: ");
-		//Serial.println(received);
+		Serial.print("Received: ");
+		Serial.println(received);
 		Serial.flush();
 
 		int indexStart = 0;
