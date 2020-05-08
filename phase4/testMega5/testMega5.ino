@@ -10,6 +10,7 @@
 #include <Wire.h>
 #include <Adafruit_ADS1015.h>
 #include <Servo.h>
+#include <ArduinoSort.h>
 
 SoftwareSerial SerialFl(62, 63); //A8 A9
 //== GLOBAL VARIABLES ======================================
@@ -123,6 +124,9 @@ float oxygen_float;
 bool readPEEP = false;
 bool readIPP = false;
 
+float offset = 0;
+int buffsize = 50;
+
 //== MAIN SETUP ============================================
 void setup() {
 	Serial.begin(115200);   // for debugging
@@ -178,6 +182,7 @@ void setup() {
   b22.attachPush(b22PushCallback, &b22);
 
 //  dbSerialPrintln(CurrentPage);
+	zeroPresSensor();
 }
 
 
@@ -226,6 +231,8 @@ void loop() {
 	Serial.println("MODE" + String(mode));
 	// NOT PAGE 1
 	while (mode == 0) {
+		zeroPresSensor();
+
 		//0. Update bacaan nextion
 		nexLoop(nex_listen_list);
 
@@ -235,6 +242,8 @@ void loop() {
 
 	// PAGE 1, RUNNING STATE OFF
 	while (mode == 1) {
+		// zeroPresSensor();
+
 		//0. Update bacaan nextion
 		nexLoop(nex_listen_list);
 
@@ -376,6 +385,55 @@ void readPEEPQ(){
 }
 void readIPPQ(){
 	readIPP = true;
+}
+
+//-- Zero-ing Pressure Sensor
+float calcPres(float pres_rawq){
+  float calc = 0.3135*pres_rawq-1316.0693-3.14;
+
+  return calc;
+}
+
+void zeroPresSensor(){
+  //0. Create buffer for value and histogram
+  float val[buffsize];
+  float lastVal;
+  int index_terpilih = 0;
+  int mode_count = 0;
+  int valcount = 0;
+
+  //1. Ambil x data
+  for(int i=0; i<buffsize; i++){
+    val[i] = calcPres(ads.readADC_SingleEnded(2))+offset;
+  }
+
+  sortArray(val, buffsize);
+
+  //2. create histogram
+  for (int i=0; i<buffsize; i++){
+    if(lastVal != val[i]){
+      lastVal = val[i];
+      valcount = countOccurances(val, val[i]);
+      if(valcount>=mode_count){
+        mode_count = valcount;
+        index_terpilih = i;
+      }
+    }
+  }
+
+  //3. Return Mode
+  offset += -1*val[index_terpilih];
+  Serial.println("OFFSET : " + String(offset));
+}
+
+int countOccurances(float val[], float q){
+  int count = 0;
+  for(int i=0; i<buffsize; i++){
+    if(val[i] == q){
+      count++;
+    }
+  }
+  return count;
 }
 
 //-- Sending necessary information to Arduino Nano ---------
@@ -617,7 +675,7 @@ float calcDatasheetPressure(int x_adc) {
 
 void pressureUpdate() {
 // Read sensor output
-	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
+	pressure_float = calcPres(ads.readADC_SingleEnded(2)) + offset;
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 
 // Update to Nextion waveform graph
@@ -633,7 +691,7 @@ double IPP_raw, IPP_float;
 double PEEP_raw, PEEP_float;
 
 void pressureUpdate1() {
-	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
+	pressure_float = calcPres(ads.readADC_SingleEnded(2)) + offset;
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 	if(pip_value < pressure_float) {
 		pip_value = pressure_float;
@@ -649,7 +707,7 @@ void pressureUpdate1() {
 
 void PEEPUpdate() {
 //  PEEP_raw = 0.3135*ads.readADC_SingleEnded(0)-1163.1143-153.43;
-	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
+	pressure_float = calcPres(ads.readADC_SingleEnded(2)) + offset;
 
 	Serial2.print("n11.val=");
 	Serial2.print(round(pressure_float));
@@ -671,7 +729,7 @@ void PEEPUpdate() {
 }
 
 void IPPUpdate() {
-	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
+	pressure_float = calcPres(ads.readADC_SingleEnded(2)) + offset;
 	IPP_float = pressure_float;
 }
 
