@@ -76,6 +76,7 @@ void setup() {
 	initDelay = 1200;
 
 	//////////// BREATHING PART //////////////////
+	pinMode(enaPin, OUTPUT);
 	pinMode(dirPin, OUTPUT);
 	pinMode(stepPin, OUTPUT);
 	pinMode(limitSwitchIn, INPUT_PULLUP);
@@ -106,6 +107,8 @@ void loop() {
 
 	// 2. IF RUNNING
 	if (runningState !=0 ) {
+		digitalWrite(enaPin, HIGH);
+
 		if(stateNow == 0) {
 			Serial.println("==> STATUS: ON");
 		}
@@ -134,6 +137,7 @@ void loop() {
 		Serial.println("WAKTU IDEAL Inhale = " + String(timeInhale));
 		Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
 		Serial.println("----");
+
 
 		readPEEP(0);
 		spuriousPrev = false;
@@ -181,7 +185,7 @@ void loop() {
 		// Sisa waktu exhale
 		while((micros()-now) < timeBreath) {
 			// 1. Geser sampai mentok (ALL)
-      while(digitalRead(limitSwitchEx)){
+      if(digitalRead(limitSwitchEx)){
           digitalWrite(dirPin, !dirInhale);
           digitalWrite(stepPin,HIGH);
           delayMicroseconds(1000);
@@ -198,11 +202,13 @@ void loop() {
 			// 3. CPAP If spurious
 			if (spuriousPrev) {
 				while(!checkPEEP()){ // kalau PEEP blm melewati batas
-					digitalWrite(dirPin, dirInhale);
-					digitalWrite(stepPin,HIGH);
-					delayMicroseconds(1000);
-					digitalWrite(stepPin,LOW);
-					delayMicroseconds(1000);
+          if(digitalRead(limitSwitchIn)){
+  					digitalWrite(dirPin, dirInhale);
+  					digitalWrite(stepPin,HIGH);
+  					delayMicroseconds(1000);
+  					digitalWrite(stepPin,LOW);
+  					delayMicroseconds(1000);
+          }
 				}
 			}
 		}
@@ -217,6 +223,7 @@ void loop() {
 		// STATUS OFF
 		readPEEP(0);
 		readIPP(0);
+		digitalWrite(enaPin, LOW);
 		if(stateNow !=0) {
 			Serial.println("==> STATUS: OFF"); Serial.flush();
 			stateNow = 0;
@@ -542,12 +549,13 @@ bool checkPEEP(){
 
 void warnVolQ(){
 	warnVol = true;
-// Serial.println("WARNING VOLUME !!!!!!!!!!!!!!!!!!!!!!");
+ Serial.println("WARNING VOLUME !!!!!!!!!!!!!!!!!!!!!!");
+ // delay(1000);
 }
 
 void warnPresQ(){
 	warnPres = true;
-//  Serial.println("WARNING PRESSURE !!!!!!!!!!!!!!!!!!!!!!");
+  Serial.println("WARNING PRESSURE !!!!!!!!!!!!!!!!!!!!!!");
 }
 
 bool checkPressure(){
