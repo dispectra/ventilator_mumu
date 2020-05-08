@@ -212,7 +212,7 @@ float calcFlow(float flow_rawq){
 // !!HOMEWORK!!
 bool spuriousDetect(){
   bool spurious = false;
-   if(flow_val > 1){
+   if(flow_val > 2){
      spurious = true;
    }
   return spurious;
