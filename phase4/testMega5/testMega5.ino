@@ -66,8 +66,8 @@ NexPage page0 = NexPage(0, 0, "page0");
 
 // SETUP
 NexPage page1 = NexPage(1, 0, "page1");
-NexDSButton bt5 = NexDSButton(1, 3, "bt5");//mandatory
-NexDSButton bt3 = NexDSButton(1, 2, "bt3");//assisted
+NexDSButton bt5 = NexDSButton(1, 2, "bt5");//mandatory
+NexDSButton bt3 = NexDSButton(1, 1, "bt3");//assisted
 
 // MAIN DISPLAY
 NexPage page2 = NexPage(2, 0, "page2");
@@ -165,10 +165,10 @@ void setup() {
 	b11.attachPush(b11PushCallback, &b11);
 	b12.attachPush(b12PushCallback, &b12);
 	b13.attachPush(b13PushCallback, &b13);
-	b14.attachPush(b14PushCallback, &&b14);
+	b14.attachPush(b14PushCallback, &b14);
 	b15.attachPush(b15PushCallback, &b15);
 	b16.attachPush(b16PushCallback, &b16);
-	
+
 	page4.attachPush(page4PushCallback, &page4);
   b17.attachPush(b17PushCallback, &b17);
   b18.attachPush(b18PushCallback, &b18);
@@ -176,7 +176,7 @@ void setup() {
   b20.attachPush(b20PushCallback, &b20);
   b21.attachPush(b21PushCallback, &b21);
   b22.attachPush(b22PushCallback, &b22);
-  
+
 //  dbSerialPrintln(CurrentPage);
 }
 
@@ -204,23 +204,26 @@ void loop() {
 	// Page 2 main display (yg ada grafik)
 	// Page 3 Setting/config (IE, RR, Vti, PEEP, O2)
 	// Page 4 Setting alarm (over PIP, under IPP, O2_tolerance)
+
 	if(mode == 5) {
 		mode = 5;
     setupq = 0;
     update2Nano();
-	}	else if(CurrentPage != 2) { //untuk page selain page main
-		mode == 0;
-		lastPage = CurrentPage;
-	} else { // Untuk page 1
-		if(runningState == 0) { // kalau lagi off
-			mode == 1;
-		} else if(runningState == 1 && setupq != 0) { // kalau lagi on
-			mode == 2;
-		}
+	} else {
+  	if(CurrentPage == 2){ // Untuk page 1
+      if(runningState == 0) { // kalau lagi off
+        mode = 1;
+      } else if(runningState == 1 && setupq != 0) { // kalau lagi on
+        mode = 2;
+      }
+    } else { //untuk page selain page main
+  		mode = 0;
+  		lastPage = CurrentPage;
+  	}
 	}
 
-
-
+	Serial.println("CURRENTPAGE" + String(CurrentPage));
+	Serial.println("MODE" + String(mode));
 	// NOT PAGE 1
 	while (mode == 0) {
 		//0. Update bacaan nextion
@@ -239,7 +242,7 @@ void loop() {
 		oxygenUpdate();
 
 		//2. Cek kalau ganti halaman/state
-		if (CurrentPage != lastPage) {break;}
+		if (CurrentPage != 2) {break;}
 		if (runningState != 0) {break;}
 	}
 
@@ -278,11 +281,15 @@ void loop() {
 
 		//3. ROUTINE EXHALE ---
 		if(exhaleStage) {
+      digitalWrite(warningPressure_PIN,HIGH);
+      digitalWrite(warningPEEP_PIN, HIGH);
 			Serial.println("EXHALING");
 
 			if(setupq==2) {
 				//1. PEEP Pressure HOLD (CPAP) if mode B
+//        pressure_float = 1;/
 				if(pressure_float < PEEP_LIMIT) {
+//        Serial.println("MEH");/
 					digitalWrite(warningPEEP_PIN, LOW);
 					setAlarm("04_HIGH");
 				} else {
@@ -318,7 +325,7 @@ void loop() {
 				mode = 5; break;
 			}
 		}
-		nexLoop(nex_listen_list);
+//		nexLoop(nex_listen_list);
 
 		if (CurrentPage != 2) {break;}
 		if (runningState == 0) {break;}
@@ -374,13 +381,16 @@ void readIPPQ(){
 //-- Sending necessary information to Arduino Nano ---------
 //-- (motor controller) through Serial2 port ---------------
 void update2Nano() {
-	String message = '<' + String(setupq) + ','
+  int stateq;
+  if(runningState==0){stateq = 0;}
+  else{stateq = setupq;}
+	String message = '<' + String(stateq) + ','
 	                 + String(Vti) + ','
 	                 + String(ERat) + ','
 	                 + String(RR) + '>';
 	Serial1.print(message); Serial1.flush();
 	Serial.println(message);
-	String message2 = '<' + String(setupq) + ','
+	String message2 = '<' + String(stateq) + ','
 	                  + String(Vti) + '>';
 	SerialFl.print(message2); SerialFl.flush();
 
@@ -477,6 +487,7 @@ void b17PushCallback(void *ptr) {
 	//asumsi variabel = HPL
 	PIP_LIMIT--;
 	if(PIP_LIMIT<=20){PIP_LIMIT=20;}
+  dbSerialPrintln("PIP" + String(PIP_LIMIT));
 }
 
 void b18PushCallback(void *ptr) {
@@ -484,7 +495,8 @@ void b18PushCallback(void *ptr) {
 	//default di 20 max 40
 	//asumsi variabel = HPL
 	PIP_LIMIT++;
-	if(HPL>=40){HPL=40;}
+	if(PIP_LIMIT>=40){PIP_LIMIT=40;}
+  dbSerialPrintln("PIP" + String(PIP_LIMIT));
 }
 
 void b19PushCallback(void *ptr) {
@@ -495,6 +507,7 @@ void b19PushCallback(void *ptr) {
 	   LPL--;
 	   if(LPL<=20){LPL=20;}
 	 */
+  dbSerialPrintln("LPL-");
 }
 
 void b20PushCallback(void *ptr) {
@@ -505,6 +518,7 @@ void b20PushCallback(void *ptr) {
 	   LPL++;
 	   if(LPL>=35){LPL=35;}
 	 */
+  dbSerialPrintln("LPL+");
 }
 
 void b21PushCallback(void *ptr) {
@@ -515,6 +529,7 @@ void b21PushCallback(void *ptr) {
 	   O2tol--;
 	   if(HPL<=5){O2tol=5;}
 	 */
+  dbSerialPrintln("O2-");
 }
 
 void b22PushCallback(void *ptr) {
@@ -525,6 +540,7 @@ void b22PushCallback(void *ptr) {
 	   O2tol++;
 	   if(HPL>=30){O2tol=30;}
 	 */
+  dbSerialPrintln("O2+");
 }
 
 void bt0PushCallback(void *ptr) {
@@ -537,21 +553,23 @@ void bt0PushCallback(void *ptr) {
 void bt5PushCallback(void *ptr) { //mandatory toggle
 //uint32_t runningState;
 // asumsi disimpan di varlokal
-	int varlokal;
+	uint32_t varlokal;
 	bt5.getValue(&varlokal);
+  Serial.println("VARLOKAL" + String(varlokal));
 	if(varlokal==1) {setupq=1;}
 	else{setupq=0;}
-	dbSerialPrintln(setupq);
+	dbSerialPrintln("SETUP" + String(setupq));
 	update2Nano();
 }
 
 void bt3PushCallback(void *ptr) { //assisted
 //uint32_t runningState;
-	int varlokal;
+	uint32_t varlokal;
 	bt3.getValue(&varlokal);
+  Serial.println("VARLOKAL" + String(varlokal));
 	if(varlokal==1) {setupq=2;}
 	else{setupq=0;}
-	dbSerialPrintln(setupq);
+	dbSerialPrintln("SETUP" + String(setupq));
 	update2Nano();
 }
 
@@ -571,12 +589,12 @@ void page2PushCallback(void *ptr) {
 }
 
 void page3PushCallback(void *ptr) {
-	CurrentPage = 4;
+	CurrentPage = 3;
 //  dbSerialPrintln(CurrentPage);
 }
 
 void page4PushCallback(void *ptr) {
-	CurrentPage = 6;
+	CurrentPage = 4;
 //  dbSerialPrintln(CurrentPage);
 }
 
@@ -599,7 +617,7 @@ float calcDatasheetPressure(int x_adc) {
 
 void pressureUpdate() {
 // Read sensor output
-	pressure_float = 0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
+	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 
 // Update to Nextion waveform graph
@@ -615,7 +633,7 @@ double IPP_raw, IPP_float;
 double PEEP_raw, PEEP_float;
 
 void pressureUpdate1() {
-	pressure_float = 0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
+	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 	if(pip_value < pressure_float) {
 		pip_value = pressure_float;
@@ -631,7 +649,7 @@ void pressureUpdate1() {
 
 void PEEPUpdate() {
 //  PEEP_raw = 0.3135*ads.readADC_SingleEnded(0)-1163.1143-153.43;
-	pressure_float = 0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
+	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
 
 	Serial2.print("n11.val=");
 	Serial2.print(round(pressure_float));
@@ -653,7 +671,7 @@ void PEEPUpdate() {
 }
 
 void IPPUpdate() {
-	pressure_float = 0.3135*ads.readADC_SingleEnded(3)-1163.1143-153.43;
+	pressure_float = 0.3135*ads.readADC_SingleEnded(2)-1316.0693-3.14;
 	IPP_float = pressure_float;
 }
 
@@ -676,6 +694,7 @@ void oxygenUpdate() {
 //-- Check if patient fight (spurious breath)
 // !!HOMEWORK!!
 bool fighting(){
+	// cek fighting pakai multiple Peak
 	bool fight = false;
 	// if(pressure_float < 0 && flow_float > 0){
 	//  fight = true;

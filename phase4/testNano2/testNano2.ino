@@ -51,7 +51,7 @@ bool updated = false;
 
 //-- Global Variables ===============================================================
 String bufferq[4];
-bool runningState = 0;
+int runningState = 0;
 bool warnVol = 0;
 bool warnPres = 0;
 int Vtidal = 0;
@@ -145,6 +145,7 @@ void loop() {
 
 		// MODE MANDATORY VOLUME
 		if(runningState == 1) {
+      Serial.println("-> MOD 1");
 			//0. INHALE SEQ
 			Serial.println("==> INHALE SEQUENCE");
 			int stepTidal2 = Inhale();
@@ -163,6 +164,7 @@ void loop() {
 		}
 		// MODE VOLUME ASSIST + CPAP
 		else if(runningState == 2) {
+      Serial.println("-> MOD 2");
 			spuriousPrev = true;
 			//0. INHALE SEQ
 			Serial.println("==> INHALE SEQUENCE");
@@ -201,7 +203,9 @@ void loop() {
 
 			// 3. CPAP If spurious
 			if (spuriousPrev) {
-				while(!checkPEEP()){ // kalau PEEP blm melewati batas
+//      Serial.println(checkPEEP());/
+				while(checkPEEP()){ // kalau PEEP blm melewati batas
+//        Serial.println(checkPEEP());/
           if(digitalRead(limitSwitchIn)){
   					digitalWrite(dirPin, dirInhale);
   					digitalWrite(stepPin,HIGH);
