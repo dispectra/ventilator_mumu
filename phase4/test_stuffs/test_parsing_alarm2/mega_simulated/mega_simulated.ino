@@ -9,19 +9,46 @@ void setup() {
 }
 
 void loop() {
-  for(int i = 1; i <= 9; i++) {
-    String keyy = "0"+String(i)+"_ON";
-    Serial.println(keyy); // debugging purpose
-    setAlarm(keyy);
-    delay(500);
+//  for(int i = 1; i <= 9; i++) {
+//    String keyy = "0"+String(i)+"_ON";
+//    Serial.println(keyy); // debugging purpose
+//    setAlarm(keyy);
+//    delay(5000);
+//  }
+//  Serial.println("Turning off");  // debugging purpose
+//  for(int i = 1; i <= 9; i++) {
+//    String keyy = "0"+String(i)+"_OFF";
+//    Serial.println(keyy);
+//    setAlarm(keyy);
+//    delay(5000);
+//  }
+
+  String command = readSerial(); 
+  Serial.println(command);
+  Serial2Alarm.print(command); Serial2Alarm.flush();
+}
+
+String readSerial() {
+  unsigned int timeout = 1000;
+  unsigned long time_begin = millis();
+  bool quit = false;
+  String packet = "";
+
+  while (!quit){
+    if (Serial.available() > 0){
+      char x = Serial.read();
+      if (x == '>'){
+        packet += x;
+        quit = true;
+      } else {
+        if (x == '<'){packet = "";}
+        packet += x;
+      }
+    }
+    if (millis() - time_begin > timeout) {quit = true;}
   }
-  Serial.println("Turning off");  // debugging purpose
-  for(int i = 1; i <= 9; i++) {
-    String keyy = "0"+String(i)+"_OFF";
-    Serial.println(keyy);
-    setAlarm(keyy);
-    delay(500);
-  }
+
+  return packet;
 }
 
 void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
