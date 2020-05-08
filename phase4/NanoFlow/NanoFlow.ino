@@ -66,7 +66,7 @@ void loop() {
     //0a. Read Flow Value
     flow_raw = ads.readADC_Differential_0_1();
     flow_val = calcFlow(flow_raw) + offset;
-  
+
     //0b. Remove Noise Values
     if(abs(flow_val) <= 1
         || abs(roundf(flow_val*100.0)/100.0) == 3.24
@@ -78,11 +78,11 @@ void loop() {
         || abs(roundf(flow_val*100.0)/100.0) == 1.62
         || abs(roundf(flow_val*100.0)/100.0) == 1.63
         ){flow_val=0;}
-  
+
   ///  Serial.println(flow_val);
     flow_val2 = 0.5*flow_val + 0.5*last_val;
     last_val = flow_val;
-  
+
     //1. Check for Inhale/Exhale Timing
     if(readPEEP){
       //reset stuffs
