@@ -44,6 +44,7 @@ boolean triggerInhale = 0;
 
 // Pressure States
 float pip_value = 0;
+float peakq = 0;
 float ipp_value = 0;
 bool exhaleStage = false;
 
@@ -751,12 +752,13 @@ void pressureUpdate1() {
 	Serial.println("Pres: " + String(pressure_float));
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 
-	if(pip_value < pressure_float) {
+	if(peakq < pressure_float) {
+		peakq = pressure_float;
 		pip_value = pressure_float;
 	} else {
-		if(pip_value - pressure_float > 5) {
+		if(peakq - pressure_float > 5) {
 			peakCount++;
-			pip_value = 0;
+			peakq = 0;
 		}
 	}
 
