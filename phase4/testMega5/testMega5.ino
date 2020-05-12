@@ -28,7 +28,7 @@ Servo servoOxigen;
 #define pinFight 33
 #define warningPEEP_PIN 34
 
-#define pinStartMotor 58 //A4
+#define pinStartMotor 59 //A5
 
 boolean warningPressure = 0;
 boolean triggerInhale = 0;
@@ -247,10 +247,10 @@ void loop() {
   while (mode == 5) {
     sendSetupToHMI('C');
     setupq = 0;
-   Serial.println("------------------ mode5"); delay(10000); 
+   Serial.println("------------------ mode5"); //delay(10000); 
 
     if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
-      Serial.println("Reset system button pressed"); Serial.flush(); delay(10000);
+      Serial.println("Reset system button pressed"); Serial.flush(); //delay(10000);
       mode = 0;
       setAlarm("99_LOW"); // Reset and send all alarms[] off
       break;
