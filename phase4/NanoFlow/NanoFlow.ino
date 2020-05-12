@@ -53,10 +53,15 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(pinIPP), readIPPQ, FALLING);
 
   pinMode(pinVolWarn, OUTPUT);
+  pinMode(pinSpur, OUTPUT);
+  
   digitalWrite(pinVolWarn, HIGH);
+  digitalWrite(pinSpur, HIGH);
   nowq = micros();
 
   zeroFlowSensor();
+
+  Serial.println("==> READY NANO SENSOR");
 }
 
 void loop() {
@@ -67,7 +72,7 @@ void loop() {
   if(runningState != 0){
     //0a. Read Flow Value
     flow_raw = ads.readADC_Differential_0_1();
-    flow_val = calcFlow(flow_raw) + offset;
+    flow_val = 10; //calcFlow(flow_raw) + offset;
 
     //0b. Remove Noise Values
     if(abs(flow_val) <= 1
@@ -110,8 +115,9 @@ void loop() {
     if(exhaleStage){ //fasa exhale
       if (flag_delayFlow) {
         unsigned long nowa = millis();
-        while(millis()-nowa < 500) {flow_raw = ads.readADC_Differential_0_1();
-    flow_val = calcFlow(flow_raw) + offset;
+        while(millis()-nowa < 500) {
+          flow_raw = ads.readADC_Differential_0_1();
+          flow_val = 10; //calcFlow(flow_raw) + offset;
         }
         flag_delayFlow = false;}
       digitalWrite(pinVolWarn, HIGH);
@@ -164,6 +170,8 @@ void loop() {
       Serial.println("VOL: " + String(vol_acc));
     }
   } else { //OFF Condition
+    readPEEP = false;
+    readIPP = false;
     zeroFlowSensor();
 
   //0a. Read Flow Value

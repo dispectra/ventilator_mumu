@@ -44,6 +44,7 @@ SoftwareSerial SerialM(11,12); //RX, TX
 #define pinSpurious A2 //NANO_SENSE D7
 #define pinPresHold A3 //MEGA D39
 #define pinFight A4 //MEGA D33
+#define pinStartMotor A5 //MEGA D25
 
 bool callibrated = false;
 bool updated = false;
@@ -82,13 +83,17 @@ void setup() {
 	pinMode(limitSwitchIn, INPUT_PULLUP);
 	pinMode(limitSwitchEx, INPUT_PULLUP);
 
+  pinMode(pinStartMotor,INPUT_PULLUP);
+
 	pinMode(pinPEEP, OUTPUT);
 	pinMode(pinIPP, OUTPUT);
 
 	pinMode(calManMaju, INPUT_PULLUP);
 	pinMode(calManMundur, INPUT_PULLUP);
+  
 	pinMode(pinSpurious, INPUT_PULLUP);
-
+  pinMode(pinPresHold, INPUT_PULLUP);
+  pinMode(pinFight, INPUT_PULLUP);
 	pinMode(pinWarnVol, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(pinWarnVol), warnVolQ, FALLING);
 	pinMode(pinWarnPres, INPUT_PULLUP);
@@ -97,6 +102,8 @@ void setup() {
 	Serial.println("==> CALLIBRATING"); Serial.flush();
 //	Callibrate();
 	Serial.println("==> CALLIBRATION DONE"); Serial.flush();
+
+  Serial.println("==> READY NANO MOTOR");
 }
 
 void loop() {
@@ -106,7 +113,7 @@ void loop() {
 	updateAllGlobalVars();
 
 	// 2. IF RUNNING
-	if (runningState !=0 ) {
+	if (digitalRead(pinStartMotor) == LOW ) {
 		digitalWrite(enaPin, LOW);
 
 		if(stateNow == 0) {
@@ -535,6 +542,11 @@ String listeningMega(){
 			quit = true;
 		}
 	}
+
+  if(seriesData == lastData) {
+    updated = true;
+  }
+  
 	lastData = seriesData;
 
 	//!! Dummy Data !!
@@ -549,9 +561,10 @@ bool checkSpurious(){
 	return triggerInhale;
 }
 
+//!REMEBER!!
 bool checkPEEP(){
 	bool check = !digitalRead(pinPresHold);
-	return check;
+	return false;
 }
 
 void warnVolQ(){

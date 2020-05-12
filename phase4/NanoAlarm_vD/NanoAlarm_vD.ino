@@ -38,14 +38,14 @@ void getCommand() {
 #define MEGA_DO_7 A5
 
 void getCommand_alt() {
-  alarm[0] = digitalRead(MEGA_DO_0);
-  alarm[1] = digitalRead(MEGA_DO_1);
-  alarm[2] = digitalRead(MEGA_DO_2);
-  alarm[3] = digitalRead(MEGA_DO_3);
-  alarm[4] = digitalRead(MEGA_DO_4);
-  alarm[5] = digitalRead(MEGA_DO_5);
-  alarm[6] = digitalRead(MEGA_DO_6);
-  alarm[7] = digitalRead(MEGA_DO_7);
+  alarm[0] = !(digitalRead(MEGA_DO_0));
+  alarm[1] = !(digitalRead(MEGA_DO_1));
+  alarm[2] = !(digitalRead(MEGA_DO_2));
+  alarm[3] = !(digitalRead(MEGA_DO_3));
+  alarm[4] = !(digitalRead(MEGA_DO_4));
+  alarm[5] = !(digitalRead(MEGA_DO_5));
+  alarm[6] = !(digitalRead(MEGA_DO_6));
+  alarm[7] = !(digitalRead(MEGA_DO_7));
 
   Serial.print("8 pin fr Mega digitalRead(): <" + String(alarm[0]));
   for (int i = 1; i < 8; i++) {
@@ -246,6 +246,15 @@ void setup() {
 //  pinMode(BUZZER_0_PIN, OUTPUT);
 //  pinMode(BUZZER_1_PIN, OUTPUT);
 //  pinMode(BUZZER_2_PIN, OUTPUT);
+
+  pinMode(MEGA_DO_0, INPUT_PULLUP);
+  pinMode(MEGA_DO_1, INPUT_PULLUP);
+  pinMode(MEGA_DO_2, INPUT_PULLUP);
+  pinMode(MEGA_DO_3, INPUT_PULLUP);
+  pinMode(MEGA_DO_4, INPUT_PULLUP);
+  pinMode(MEGA_DO_5, INPUT_PULLUP);
+  pinMode(MEGA_DO_6, INPUT_PULLUP);
+  pinMode(MEGA_DO_7, INPUT_PULLUP);
 }
 
 

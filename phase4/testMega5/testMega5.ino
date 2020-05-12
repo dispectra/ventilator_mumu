@@ -28,6 +28,8 @@ Servo servoOxigen;
 #define pinFight 33
 #define warningPEEP_PIN 34
 
+#define pinStartMotor 58 //A4
+
 boolean warningPressure = 0;
 boolean triggerInhale = 0;
 
@@ -140,10 +142,17 @@ void setup() {
 //  ads.setGain(GAIN_SIXTEEN);
 
 	pinMode(3, INPUT_PULLUP);
-	pinMode(warningPressure_PIN, OUTPUT);
-	attachInterrupt(digitalPinToInterrupt(3), readPEEPQ, FALLING);
-	attachInterrupt(digitalPinToInterrupt(2), readIPPQ, FALLING);
+	pinMode(2, INPUT_PULLUP);
+	attachInterrupt(digitalPinToInterrupt(2), readPEEPQ, FALLING);
+	attachInterrupt(digitalPinToInterrupt(3), readIPPQ, FALLING);
 
+  pinMode(warningPressure_PIN, OUTPUT);
+  pinMode(pinFight, OUTPUT);
+  pinMode(warningPEEP_PIN, OUTPUT);
+  pinMode(pinSpurious, INPUT_PULLUP);
+  pinMode(pinStartMotor, OUTPUT);
+  digitalWrite(pinStartMotor, HIGH);
+  
 //	servoPEEP.attach(sigServoPEEP);
 //	servoOxigen.attach(sigServoOx);
 //	pinMode(enaServoPEEP, OUTPUT);
@@ -184,6 +193,7 @@ void setup() {
 
 //  dbSerialPrintln(CurrentPage);
 	zeroPresSensor();
+  Serial.println("==> READY MEGA");
 }
 
 
@@ -212,9 +222,11 @@ void loop() {
 	// Page 4 Setting alarm (over PIP, under IPP, O2_tolerance)
 
 	if(mode == 5) {
-		mode = 5;
     setupq = 0;
+    runningState = 0;
     update2Nano();
+    Serial.println("WOKE"); Serial.flush();
+//    delay(100000);
 	} else {
   	if(CurrentPage == 2){ // Untuk page 1
       if(runningState == 0) { // kalau lagi off
@@ -230,6 +242,21 @@ void loop() {
 
 	Serial.println("CURRENTPAGE" + String(CurrentPage));
 	Serial.println("MODE" + String(mode));
+
+  // mode utk routine stuck setelah alarm
+  while (mode == 5) {
+    sendSetupToHMI('C');
+    setupq = 0;
+   Serial.println("------------------ mode5"); delay(10000); 
+
+    if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
+      Serial.println("Reset system button pressed"); Serial.flush(); delay(10000);
+      mode = 0;
+      setAlarm("99_LOW"); // Reset and send all alarms[] off
+      break;
+    }
+//    Serial.println("!!! ALARM HIGH. MACHINE STOPPED. FIX THE SETUP THEN PRESS ALARM RESET BUTTON !!!"); Serial.fulsh();
+  }
 
 	// NOT PAGE 1
 	while (mode == 0) {
@@ -252,6 +279,8 @@ void loop() {
 		//1. Update nilai Oksigen
 		oxygenUpdate();
    pressureUpdate1();
+    readPEEP = false;
+    readIPP = false;
 
 		//2. Cek kalau ganti halaman/state
 		if (CurrentPage != 2) {break;}
@@ -347,20 +376,7 @@ void loop() {
 		if (setupq == 0) {break;}
 	}
 
-	// mode utk routine stuck setelah alarm
-	while (mode == 5) {
-		sendSetupToHMI('C');
-		setupq = 0;
-   Serial.println("------------------ mode5"); delay(10000); 
-
-		if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
-      Serial.println("Reset system button pressed"); Serial.flush(); delay(10000);
-			mode = 0;
-      setAlarm("99_LOW"); // Reset and send all alarms[] off
-			break;
-		}
-//    Serial.println("!!! ALARM HIGH. MACHINE STOPPED. FIX THE SETUP THEN PRESS ALARM RESET BUTTON !!!"); Serial.fulsh();
-	}
+	
 }
 
 
@@ -449,8 +465,8 @@ int countOccurances(float val[], float q){
 //-- (motor controller) through Serial2 port ---------------
 void update2Nano() {
   int stateq;
-  if(runningState==0){stateq = 0;}
-  else{stateq = setupq;}
+  if(runningState==0 || setupq == 0){stateq = 0; digitalWrite(pinStartMotor, HIGH);} //off
+  else{stateq = setupq; digitalWrite(pinStartMotor, LOW);} //on
 	String message = '<' + String(stateq) + ','
 	                 + String(Vti) + ','
 	                 + String(ERat) + ','
