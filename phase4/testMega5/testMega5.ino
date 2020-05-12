@@ -30,6 +30,15 @@ Servo servoOxigen;
 
 #define pinStartMotor 59 //A5
 
+#define MEGA_DO_0 44
+#define MEGA_DO_1 45
+#define MEGA_DO_2 46
+#define MEGA_DO_3 47
+#define MEGA_DO_4 48
+#define MEGA_DO_5 49
+#define MEGA_DO_6 50
+#define MEGA_DO_7 51
+
 boolean warningPressure = 0;
 boolean triggerInhale = 0;
 
@@ -152,7 +161,7 @@ void setup() {
   pinMode(pinSpurious, INPUT_PULLUP);
   pinMode(pinStartMotor, OUTPUT);
   digitalWrite(pinStartMotor, HIGH);
-  
+
 //	servoPEEP.attach(sigServoPEEP);
 //	servoOxigen.attach(sigServoOx);
 //	pinMode(enaServoPEEP, OUTPUT);
@@ -190,6 +199,16 @@ void setup() {
   b20.attachPush(b20PushCallback, &b20);
   b21.attachPush(b21PushCallback, &b21);
   b22.attachPush(b22PushCallback, &b22);
+
+	pinMode(MEGA_DO_0, OUTPUT);
+	pinMode(MEGA_DO_1, OUTPUT);
+	pinMode(MEGA_DO_2, OUTPUT);
+	pinMode(MEGA_DO_3, OUTPUT);
+	pinMode(MEGA_DO_4, OUTPUT);
+	pinMode(MEGA_DO_5, OUTPUT);
+	pinMode(MEGA_DO_6, OUTPUT);
+	pinMode(MEGA_DO_7, OUTPUT);
+	setAlarm("99_OFF");
 
 //  dbSerialPrintln(CurrentPage);
 	zeroPresSensor();
@@ -247,7 +266,7 @@ void loop() {
   while (mode == 5) {
     sendSetupToHMI('C');
     setupq = 0;
-   Serial.println("------------------ mode5"); //delay(10000); 
+   Serial.println("------------------ mode5"); //delay(10000);
 
     if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
       Serial.println("Reset system button pressed"); Serial.flush(); //delay(10000);
@@ -322,7 +341,7 @@ void loop() {
 		oxygenUpdate();
 
     Serial.println("SETUPQ : " + String(setupq));
-    
+
 		//3. ROUTINE EXHALE ---
 		if(exhaleStage) {
       digitalWrite(warningPressure_PIN,HIGH);
@@ -380,7 +399,7 @@ void loop() {
 		if (setupq == 0) {break;}
 	}
 
-	
+
 }
 
 
@@ -827,8 +846,19 @@ void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
 	}
 	msg = msg + ">";
 
-	Serial3.println(msg); Serial3.flush();
-	Serial.println(String(key) + " | To alarm: " + String(msg)); Serial.flush();
+//	Serial3.println(msg); Serial3.flush();
+
+  // Alternative communication using digitalWrite
+  digitalWrite(MEGA_DO_0, !(alarms[0]));
+  digitalWrite(MEGA_DO_1, !(alarms[1]));
+  digitalWrite(MEGA_DO_2, !(alarms[2]));
+  digitalWrite(MEGA_DO_3, !(alarms[3]));
+  digitalWrite(MEGA_DO_4, !(alarms[4]));
+  digitalWrite(MEGA_DO_5, !(alarms[5]));
+  digitalWrite(MEGA_DO_6, !(alarms[6]));
+  digitalWrite(MEGA_DO_7, !(alarms[7]));
+
+	Serial.println(msg);
 }
 
 //-- Servo to set Oxygen
