@@ -133,18 +133,18 @@ int buffsize = 50;
 //== MAIN SETUP ============================================
 void setup() {
 	Serial.begin(115200);   // for debugging
-	Serial1.begin(57600);   // from/to Nano
+	Serial1.begin(57600);   // from/to Nano Motor
 	Serial2.begin(115200);   // from/to Nextion #Updated to 115200
 	Serial3.begin(115200); // NANO alarm
-	SerialFl.begin(57600); // NANO FLOW
+	SerialFl.begin(57600); // NANO Sensor
 
 	ads.begin();      // from/to ADS115 + Oxygen
 //  ads.setGain(GAIN_SIXTEEN);
 
 	pinMode(3, INPUT_PULLUP);
 	pinMode(2, INPUT_PULLUP);
-	attachInterrupt(digitalPinToInterrupt(2), readPEEPQ, FALLING);
-	attachInterrupt(digitalPinToInterrupt(3), readIPPQ, FALLING);
+	attachInterrupt(digitalPinToInterrupt(3), readPEEPQ, FALLING);
+	attachInterrupt(digitalPinToInterrupt(2), readIPPQ, FALLING);
 
   pinMode(warningPressure_PIN, OUTPUT);
   pinMode(pinFight, OUTPUT);
@@ -321,6 +321,8 @@ void loop() {
 		pressureUpdate1();
 		oxygenUpdate();
 
+    Serial.println("SETUPQ : " + String(setupq));
+    
 		//3. ROUTINE EXHALE ---
 		if(exhaleStage) {
       digitalWrite(warningPressure_PIN,HIGH);
@@ -328,6 +330,7 @@ void loop() {
 			Serial.println("EXHALING");
 
 			if(setupq==2) {
+        setAlarm("04_OFF");
 				//1. PEEP Pressure HOLD (CPAP) if mode B
 //        pressure_float = 1;/
 				if(pressure_float < PEEP_LIMIT) {
@@ -341,33 +344,34 @@ void loop() {
 			} else if(setupq==1) {
 				// Cek Spurious Trigger dari Arduino Sensor
 				if (digitalRead(pinSpurious)== LOW) {
-					setupq == 2;
+					setupq = 2;
 					sendSetupToHMI('B');
 					setAlarm("04_ON");
-				} else { setAlarm("04_OFF");}
+				}
 			}
 
 		}
 
 		//4. ROUTINE INHALE ---
 		else {
+      setAlarm("04_OFF");
 			Serial.println("INHALING");
 
 			//0. Cek Fighting
-			if(fighting()) {
-				digitalWrite(pinFight,LOW);
-				setAlarm("02_ON");
-				mode = 5; break;
-			}
+//			if(fighting()) {
+//				digitalWrite(pinFight,LOW);
+//				setAlarm("02_ON");
+//				mode = 5; break;
+//			}
 
-			if (pressure_float > PIP_LIMIT) { // warning pressure to nano through digital pin
-				Serial.println("WARN!!");
-				digitalWrite(warningPressure_PIN,LOW);
-				delay(1);
-				digitalWrite(warningPressure_PIN,HIGH);
-				setAlarm("00_ON");
-				mode = 5; break;
-			}
+//			if (pressure_float > PIP_LIMIT) { // warning pressure to nano through digital pin
+//				Serial.println("WARN!!");
+//				digitalWrite(warningPressure_PIN,LOW);
+//				delay(1);
+//				digitalWrite(warningPressure_PIN,HIGH);
+//				setAlarm("00_ON");
+//				mode = 5; break;
+//			}
 		}
 //		nexLoop(nex_listen_list);
 

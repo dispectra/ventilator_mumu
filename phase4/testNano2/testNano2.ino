@@ -210,6 +210,7 @@ void loop() {
 
 			// 3. CPAP If spurious
 			if (spuriousPrev) {
+        runningState = 2;
 //      Serial.println(checkPEEP());/
 				while(checkPEEP()){ // kalau PEEP blm melewati batas
 //        Serial.println(checkPEEP());/

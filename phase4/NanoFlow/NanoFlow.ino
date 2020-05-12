@@ -171,8 +171,9 @@ void loop() {
     }
   } else { //OFF Condition
     readPEEP = false;
-    readIPP = false;
+    readPEEP = false;
     zeroFlowSensor();
+    digitalWrite(pinSpur, HIGH);
 
   //0a. Read Flow Value
     flow_raw = ads.readADC_Differential_0_1();
