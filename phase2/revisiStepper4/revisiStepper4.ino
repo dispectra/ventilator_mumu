@@ -13,25 +13,25 @@
 // stepPin = pin PUL+
 // microstepping = settingan microstepping (1 / 2 / 4 / 8 / 16)
 // dirInhale = arah untuk inhale (HIGH / LOW)
-#define dirPin 4
-#define stepPin 9
+#define dirPin 6
+#define stepPin 5
 #define microstepping 4
 #define dirInhale LOW
-#define limitSwitchIn 5
-#define limitSwitchEx 6
+#define limitSwitchIn A0
+#define limitSwitchEx A4
 
 // Slope2an
 //#define initDelay 750
-#define endDelay 1000
+#define endDelay 1200
 
 //-- Input HMI ======================================================================
 // volTidal = Volume Tidal (cc)
 // IRat dan ERat = IERatio ( I : E )
 // RR = Respiration Rate (x per minute)
-float volTidal = 300;
+float volTidal = 450;
 int IRat = 1;
-int ERat = 2;
-int RR = 10;
+float ERat = 2.5;
+int RR = 14;
 
 //-- GLOBAL VARIABLEs ===============================================================
 unsigned long stepTidal, delayInhale, delayExhale, timeInEx;
@@ -44,7 +44,7 @@ void setup() {
   pinMode(dirPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   
-  slopeFactor = 0.5;
+  slopeFactor = 0.35;
   stepTidal = cekTidal(volTidal);
   timeBreath = (60000 / float(RR)) * 1000;
   timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
@@ -54,9 +54,10 @@ void setup() {
   
 //  timeInEx = stepTidal * delayInhale/; 
 
-  pinMode(10, INPUT_PULLUP);
+  pinMode(2, OUTPUT);
   pinMode(7, INPUT_PULLUP);
   pinMode(8, INPUT_PULLUP);
+  pinMode(12, INPUT_PULLUP);
   pinMode(limitSwitchIn, INPUT_PULLUP);
   pinMode(limitSwitchEx, INPUT_PULLUP);
   
@@ -77,7 +78,8 @@ void setup() {
 
 //-- LOOP ============================================================================
 void loop() {
-  if(digitalRead(10) == LOW){
+  if(digitalRead(12) == LOW){
+    digitalWrite(2, HIGH);
     Serial.println("MODE 1");
     if (stepTidal > 0) {
       unsigned long now = micros();
@@ -104,6 +106,7 @@ void loop() {
  
     }
   } else if(digitalRead(7) == LOW){
+    digitalWrite(2, LOW);
     Serial.println("Cal In");
       digitalWrite(dirPin, LOW);
       if(digitalRead(limitSwitchIn)){
@@ -115,6 +118,7 @@ void loop() {
       }
       delayMicroseconds(2000);
   } else if(digitalRead(8) == LOW){
+    digitalWrite(2, LOW);
     Serial.println("Cal Out");
       digitalWrite(dirPin, HIGH); 
       if(digitalRead(limitSwitchEx)){
@@ -131,9 +135,9 @@ void loop() {
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
-  float lookup_vol[] = {223.75, 289.53, 355.72, 410.89, 475.67, 550.83, 606.44, 653.11, 704.17, 748.33, 771.95};
-  float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950};
-
+  float lookup_vol[] = {165, 229, 299, 368, 435, 492, 548, 586, 608, 615};
+  float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900};
+  
   float stepTidal = 0;
   int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);
 
@@ -190,22 +194,15 @@ float cariMax(float list[], int arraySize){
 //-- Sekuens Inhale ====================================================================
 void Inhale() {
   // 0. Hitung Waktu
-  initDelay = delayInhale;
   unsigned long now = micros();
-  float delayInhale2 = initDelay;
+  float delayInhale2 = delayInhale;
+  
   // 1. Set Arah
   digitalWrite(dirPin, dirInhale);
   delayMicroseconds(5);
 
   // 2. Set Gerakan Stepper
   for(int i = 0; i < stepTidal; i++) {
-    if(i < slopeFactor*stepTidal){
-      delayInhale2 -= (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
-    if(i>(1-slopeFactor)*stepTidal){
-      delayInhale2 += (initDelay-delayInhale) / (slopeFactor*stepTidal);
-    }
-    
 //    Serial.println(delayInhale2);/
 
     if(digitalRead(limitSwitchIn)){
@@ -227,7 +224,7 @@ void Inhale() {
 //-- Sekuens Exhale ====================================================================
 void Exhale() {
   // 0. Hitung Waktu
-  initDelay = 1000;
+  initDelay = 1200;
   unsigned long now = micros();
   float delayExhale2 = initDelay;
   

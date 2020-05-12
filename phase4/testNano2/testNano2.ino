@@ -95,7 +95,7 @@ void setup() {
 	attachInterrupt(digitalPinToInterrupt(pinWarnPres), warnPresQ, FALLING);
 
 	Serial.println("==> CALLIBRATING"); Serial.flush();
-	Callibrate();
+//	Callibrate();
 	Serial.println("==> CALLIBRATION DONE"); Serial.flush();
 }
 
@@ -107,7 +107,7 @@ void loop() {
 
 	// 2. IF RUNNING
 	if (runningState !=0 ) {
-		digitalWrite(enaPin, HIGH);
+		digitalWrite(enaPin, LOW);
 
 		if(stateNow == 0) {
 			Serial.println("==> STATUS: ON");
@@ -227,7 +227,7 @@ void loop() {
 		// STATUS OFF
 		readPEEP(0);
 		readIPP(0);
-		digitalWrite(enaPin, LOW);
+		digitalWrite(enaPin, HIGH);
 		if(stateNow !=0) {
 			Serial.println("==> STATUS: OFF"); Serial.flush();
 			stateNow = 0;
@@ -283,7 +283,8 @@ int Inhale() { // Mandatory Volume Inhale
 
 		if(digitalRead(limitSwitchIn)) {
 			digitalWrite(stepPin, HIGH);
-		}
+		} 
+//		else {break;}
 
 		delayMicroseconds(delayInhale2);
 
@@ -293,7 +294,8 @@ int Inhale() { // Mandatory Volume Inhale
 
 		if(digitalRead(limitSwitchIn)) {
 			digitalWrite(stepPin, LOW);
-		}
+		} 
+//		else {break;}
 
 		delayMicroseconds(delayInhale2);
 //
@@ -386,6 +388,7 @@ void Exhale(int stepTidalE) {
 		delayMicroseconds(delayExhale2);
 		if(checkSpurious()) {
 			spuriousPrev = true;
+      Serial.println("spurious----------!!!!!!!!!!!!!!!!111!!");
 		}
 
 		if(digitalRead(limitSwitchEx)) {
@@ -563,14 +566,17 @@ void warnPresQ(){
 }
 
 bool checkPressure(){
+  Serial.println("WarnPres = " + String(warnPres)); Serial.flush();
 	return warnPres;
 }
 
 bool checkVolume(){
+  Serial.println("Cek Vol = " + String(warnVol)); Serial.flush();
 	return warnVol;
 }
 
 bool checkVolumePres(){
+  Serial.println("WarnCekPres = " + String(warnVol || warnPres)); Serial.flush();
 	return warnVol || warnPres;
 }
 

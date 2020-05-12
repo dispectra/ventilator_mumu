@@ -37,6 +37,8 @@ float offset = 0;
 bool warned = false;
 int buffsize = 50;
 
+bool flag_delayFlow = true;
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -74,9 +76,10 @@ void loop() {
         || abs(roundf(flow_val*100.0)/100.0) == 4.06
         || abs(roundf(flow_val*100.0)/100.0) == 4.87
         || abs(roundf(flow_val*100.0)/100.0) == 5.68
-        || abs(roundf(flow_val*100.0)/100.0) == 2.43
+        || abs(roundf(flow_val*100.0)/100.0) == 2.34
         || abs(roundf(flow_val*100.0)/100.0) == 1.62
         || abs(roundf(flow_val*100.0)/100.0) == 1.63
+        || abs(roundf(flow_val*100.0)/100.0) == 1.56
         ){flow_val=0;}
 
   ///  Serial.println(flow_val);
@@ -105,7 +108,14 @@ void loop() {
 
     //2. EXHALE ROUTINE
     if(exhaleStage){ //fasa exhale
+      if (flag_delayFlow) {
+        unsigned long nowa = millis();
+        while(millis()-nowa < 500) {flow_raw = ads.readADC_Differential_0_1();
+    flow_val = calcFlow(flow_raw) + offset;
+        }
+        flag_delayFlow = false;}
       digitalWrite(pinVolWarn, HIGH);
+      Serial.println(flow_val);
       if(lastState == 0){
         Serial.println("EXHALE STAGE");
         lastState = 1;
@@ -113,13 +123,16 @@ void loop() {
 
       //0. Cek Spurious
       if(spuriousDetect()){
+        Serial.println("-------------spurious"); 
         digitalWrite(pinSpur, LOW);
+//        delay(1000000);
       }
 
       warned = false;
     }
     //3. INHALE ROUTINE
     else {
+      flag_delayFlow = true;
       if(lastState == 1){
         Serial.println("INHALE STAGE");
         lastState = 0;
@@ -147,10 +160,30 @@ void loop() {
       // Serial.println(vol_acc);
 
       Serial.println("====> TIME: " + String(dt));
+      Serial.println("Flow: " + String(flow_val));
       Serial.println("VOL: " + String(vol_acc));
     }
   } else { //OFF Condition
     zeroFlowSensor();
+
+  //0a. Read Flow Value
+    flow_raw = ads.readADC_Differential_0_1();
+    flow_val = calcFlow(flow_raw) + offset;
+
+    //0b. Remove Noise Values
+    if(abs(flow_val) <= 1
+        || abs(roundf(flow_val*100.0)/100.0) == 3.24
+        || abs(roundf(flow_val*100.0)/100.0) == 0.81
+        || abs(roundf(flow_val*100.0)/100.0) == 4.06
+        || abs(roundf(flow_val*100.0)/100.0) == 4.87
+        || abs(roundf(flow_val*100.0)/100.0) == 5.68
+        || abs(roundf(flow_val*100.0)/100.0) == 2.34
+        || abs(roundf(flow_val*100.0)/100.0) == 1.62
+        || abs(roundf(flow_val*100.0)/100.0) == 1.63
+        || abs(roundf(flow_val*100.0)/100.0) == 1.56
+        ){flow_val=0;}
+    Serial.println(flow_val);
+    delay(10);
   }
 }
 
@@ -184,7 +217,7 @@ void zeroFlowSensor(){
 
   //3. Return Mode
   offset += -1*val[index_terpilih];
-  Serial.println("OFFSET : " + String(offset));
+  //  Serial.println("OFFSET : " + String(offset));
 }
 
 int countOccurances(float val[], float q){
@@ -212,7 +245,7 @@ float calcFlow(float flow_rawq){
 // !!HOMEWORK!!
 bool spuriousDetect(){
   bool spurious = false;
-   if(flow_val > 2){
+   if(flow_val > 8){
      spurious = true;
    }
   return spurious;

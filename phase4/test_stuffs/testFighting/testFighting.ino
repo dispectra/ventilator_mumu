@@ -28,9 +28,9 @@ void loop() {
   // put your main code here, to run repeatedly:
   pres_raw = ads.readADC_SingleEnded(0);
   pres_val = calcFlow(pres_raw) + offset;
-  
+
   Serial.println(pres_val);
-  
+
   if(pres_val>peak) {
     peak = pres_val;
   } else {
@@ -57,7 +57,7 @@ void loop() {
     peak = 0;
     peakCount = 0;
     zeroFlowSensor();
-    Serial.println("RESET -------------");    
+    Serial.println("RESET -------------");
   }
   delay(11);
 }
@@ -113,3 +113,15 @@ float calcFlow(float pres_rawq){
 
   return calc;
 }
+
+
+//Define array of alarm triggers
+//alarmzz[0] = High pressure exceeded PIP (HIGH)
+//alarmzz[1] = Pressure too low (HIGH)
+//alarmzz[2] = Patient is fighting (HIGH)
+//alarmzz[3] = Overcurrent fault (HIGH)
+//alarmzz[4] = Sporious breath (MEDIUM)
+//alarmzz[5] = Overtidal volume (MEDIUM)
+//alarmzz[6] = Low PEEP (MEDIUM)
+//alarmzz[7] =
+//alarmzz[8] = Low/Oversupply of Oxygen (LOW)

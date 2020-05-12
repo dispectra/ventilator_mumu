@@ -55,10 +55,11 @@ int lastPage;
 int mode = 0;
 
 // new variables
-int PIP_LIMIT = 100;
+int PIP_LIMIT = 20;
+int peakCount = 0;
 
-#define ButtonResetAlarm_PIN 40
-byte alarms[9] = {0,0,0,0,0,0,0,0,0};
+#define ButtonResetAlarm_PIN 36
+bool alarms[9] = {0,0,0,0,0,0,0,0,0};
 
 //NexNumber(page, ID, Nama)
 //!!HMI!!
@@ -143,10 +144,10 @@ void setup() {
 	attachInterrupt(digitalPinToInterrupt(3), readPEEPQ, FALLING);
 	attachInterrupt(digitalPinToInterrupt(2), readIPPQ, FALLING);
 
-	servoPEEP.attach(sigServoPEEP);
-	servoOxigen.attach(sigServoOx);
-	pinMode(enaServoPEEP, OUTPUT);
-	pinMode(enaServoOx, OUTPUT);
+//	servoPEEP.attach(sigServoPEEP);
+//	servoOxigen.attach(sigServoOx);
+//	pinMode(enaServoPEEP, OUTPUT);
+//	pinMode(enaServoOx, OUTPUT);
 
 	// Tombol
 	pinMode(ButtonResetAlarm_PIN, INPUT_PULLUP);
@@ -229,6 +230,7 @@ void loop() {
 
 	Serial.println("CURRENTPAGE" + String(CurrentPage));
 	Serial.println("MODE" + String(mode));
+
 	// NOT PAGE 1
 	while (mode == 0) {
 		zeroPresSensor();
@@ -249,6 +251,7 @@ void loop() {
 
 		//1. Update nilai Oksigen
 		oxygenUpdate();
+   pressureUpdate1();
 
 		//2. Cek kalau ganti halaman/state
 		if (CurrentPage != 2) {break;}
@@ -275,6 +278,7 @@ void loop() {
 		if(readPEEP) {
 			PEEPUpdate();
 			pip_value = 0;
+	    peakCount = 0;
 			readPEEP = false;
 			exhaleStage = false;
 		}
@@ -300,16 +304,18 @@ void loop() {
 				if(pressure_float < PEEP_LIMIT) {
 //        Serial.println("MEH");/
 					digitalWrite(warningPEEP_PIN, LOW);
-					setAlarm("04_HIGH");
+					setAlarm("06_ON");
 				} else {
 					digitalWrite(warningPEEP_PIN, HIGH);
+					setAlarm("06_OFF");
 				}
 			} else if(setupq==1) {
 				// Cek Spurious Trigger dari Arduino Sensor
 				if (digitalRead(pinSpurious)== LOW) {
 					setupq == 2;
 					sendSetupToHMI('B');
-				}
+					setAlarm("04_ON");
+				} else { setAlarm("04_OFF");}
 			}
 
 		}
@@ -321,7 +327,7 @@ void loop() {
 			//0. Cek Fighting
 			if(fighting()) {
 				digitalWrite(pinFight,LOW);
-				setAlarm("02_HIGH");
+				setAlarm("02_ON");
 				mode = 5; break;
 			}
 
@@ -330,7 +336,7 @@ void loop() {
 				digitalWrite(warningPressure_PIN,LOW);
 				delay(1);
 				digitalWrite(warningPressure_PIN,HIGH);
-				setAlarm("00_HIGH");
+				setAlarm("00_ON");
 				mode = 5; break;
 			}
 		}
@@ -345,11 +351,13 @@ void loop() {
 	while (mode == 5) {
 		sendSetupToHMI('C');
 		setupq = 0;
+   Serial.println("------------------ mode5"); delay(10000); 
 
-		if (digitalRead(ButtonResetAlarm_PIN == LOW)) {
+		if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
+      Serial.println("Reset system button pressed"); Serial.flush(); delay(10000);
 			mode = 0;
+      setAlarm("99_LOW"); // Reset and send all alarms[] off
 			break;
-			setAlarm("99_LOW"); // Reset and send all alarms[] off
 		}
 //    Serial.println("!!! ALARM HIGH. MACHINE STOPPED. FIX THE SETUP THEN PRESS ALARM RESET BUTTON !!!"); Serial.fulsh();
 	}
@@ -401,6 +409,7 @@ void zeroPresSensor(){
   int index_terpilih = 0;
   int mode_count = 0;
   int valcount = 0;
+	peakCount = 0;
 
   //1. Ambil x data
   for(int i=0; i<buffsize; i++){
@@ -423,7 +432,7 @@ void zeroPresSensor(){
 
   //3. Return Mode
   offset += -1*val[index_terpilih];
-  Serial.println("OFFSET : " + String(offset));
+//  Serial.println("OFFSET : " + String(offset));
 }
 
 int countOccurances(float val[], float q){
@@ -692,9 +701,16 @@ double PEEP_raw, PEEP_float;
 
 void pressureUpdate1() {
 	pressure_float = calcPres(ads.readADC_SingleEnded(2)) + offset;
+  Serial.println("Pres: " + String(pressure_float));
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
+
 	if(pip_value < pressure_float) {
 		pip_value = pressure_float;
+	} else {
+		if(pip_value - pressure_float > 5){
+			peakCount++;
+			pip_value = 0;
+		}
 	}
 
 // Update to Nextion waveform graph
@@ -754,9 +770,12 @@ void oxygenUpdate() {
 bool fighting(){
 	// cek fighting pakai multiple Peak
 	bool fight = false;
-	// if(pressure_float < 0 && flow_float > 0){
-	//  fight = true;
-	// }
+
+	if(peakCount > 2){
+		fight = true;
+		peakCount = 0;
+	}
+
 	return fight;
 }
 
@@ -789,7 +808,7 @@ void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
 	msg = msg + ">";
 
 	Serial3.println(msg); Serial3.flush();
-	Serial.println(msg);
+	Serial.println(String(key) + " | To alarm: " + String(msg)); Serial.flush();
 }
 
 //-- Servo to set Oxygen
