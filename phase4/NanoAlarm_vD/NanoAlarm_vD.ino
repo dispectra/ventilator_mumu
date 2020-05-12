@@ -224,6 +224,8 @@ void buzzer_SINGLE_beep_off() {digitalWrite(BUZZER_SINGLE_PIN,LOW);}
 
 bool silence_state = false;
 unsigned long silence_begin = 0;
+unsigned long now_dummy = 0;
+bool silence_button_dummy = 0;
 #define silence_timeout 120000
 
 void setup() {
@@ -272,7 +274,9 @@ void loop() {
     silence_begin = millis();
   }
 
-  if (!digitalRead(SILENCE_BUTTON_PIN) && silence_state == true && (millis() - silence_begin > 200)) {
+  silence_button_dummy = !(digitalRead(SILENCE_BUTTON_PIN));
+  now_dummy = millis();
+  if (silence_button_dummy && silence_state == true && ((now_dummy - silence_begin) > 200)) {
     silence_state = false;
     silence_begin = 0;
   }
