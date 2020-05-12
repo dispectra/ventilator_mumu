@@ -358,20 +358,20 @@ void loop() {
 			Serial.println("INHALING");
 
 			//0. Cek Fighting
-//			if(fighting()) {
-//				digitalWrite(pinFight,LOW);
-//				setAlarm("02_ON");
-//				mode = 5; break;
-//			}
+			if(fighting()) {
+				digitalWrite(pinFight,LOW);
+				setAlarm("02_ON");
+				mode = 5; break;
+			}
 
-//			if (pressure_float > PIP_LIMIT) { // warning pressure to nano through digital pin
-//				Serial.println("WARN!!");
-//				digitalWrite(warningPressure_PIN,LOW);
-//				delay(1);
-//				digitalWrite(warningPressure_PIN,HIGH);
-//				setAlarm("00_ON");
-//				mode = 5; break;
-//			}
+			if (pressure_float > PIP_LIMIT) { // warning pressure to nano through digital pin
+				Serial.println("WARN!!");
+				digitalWrite(warningPressure_PIN,LOW);
+				delay(1);
+				digitalWrite(warningPressure_PIN,HIGH);
+				setAlarm("00_ON");
+				mode = 5; break;
+			}
 		}
 //		nexLoop(nex_listen_list);
 
