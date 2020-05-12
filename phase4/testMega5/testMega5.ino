@@ -155,12 +155,12 @@ void setup() {
 	attachInterrupt(digitalPinToInterrupt(3), readPEEPQ, FALLING);
 	attachInterrupt(digitalPinToInterrupt(2), readIPPQ, FALLING);
 
-  pinMode(warningPressure_PIN, OUTPUT);
-  pinMode(pinFight, OUTPUT);
-  pinMode(warningPEEP_PIN, OUTPUT);
-  pinMode(pinSpurious, INPUT_PULLUP);
-  pinMode(pinStartMotor, OUTPUT);
-  digitalWrite(pinStartMotor, HIGH);
+	pinMode(warningPressure_PIN, OUTPUT);
+	pinMode(pinFight, OUTPUT);
+	pinMode(warningPEEP_PIN, OUTPUT);
+	pinMode(pinSpurious, INPUT_PULLUP);
+	pinMode(pinStartMotor, OUTPUT);
+	digitalWrite(pinStartMotor, HIGH);
 
 //	servoPEEP.attach(sigServoPEEP);
 //	servoOxigen.attach(sigServoOx);
@@ -171,16 +171,16 @@ void setup() {
 	pinMode(ButtonResetAlarm_PIN, INPUT_PULLUP);
 
 	nexInit();
-  page0.attachPush(page0PushCallback, &page0);
+	page0.attachPush(page0PushCallback, &page0);
 
-  page1.attachPush(page1PushCallback, &page1);
-  bt3.attachPush(bt3PushCallback, &bt3);
-  bt5.attachPush(bt5PushCallback, &bt5);
+	page1.attachPush(page1PushCallback, &page1);
+	bt3.attachPush(bt3PushCallback, &bt3);
+	bt5.attachPush(bt5PushCallback, &bt5);
 
-  page2.attachPush(page2PushCallback, &page2);
+	page2.attachPush(page2PushCallback, &page2);
 	bt0.attachPush(bt0PushCallback, &bt0);
 
-  page3.attachPush(page3PushCallback, &page3);
+	page3.attachPush(page3PushCallback, &page3);
 	b7.attachPush(b7PushCallback, &b7);
 	b8.attachPush(b8PushCallback, &b8);
 	b9.attachPush(b9PushCallback, &b9);
@@ -193,12 +193,12 @@ void setup() {
 	b16.attachPush(b16PushCallback, &b16);
 
 	page4.attachPush(page4PushCallback, &page4);
-  b17.attachPush(b17PushCallback, &b17);
-  b18.attachPush(b18PushCallback, &b18);
-  b19.attachPush(b19PushCallback, &b19);
-  b20.attachPush(b20PushCallback, &b20);
-  b21.attachPush(b21PushCallback, &b21);
-  b22.attachPush(b22PushCallback, &b22);
+	b17.attachPush(b17PushCallback, &b17);
+	b18.attachPush(b18PushCallback, &b18);
+	b19.attachPush(b19PushCallback, &b19);
+	b20.attachPush(b20PushCallback, &b20);
+	b21.attachPush(b21PushCallback, &b21);
+	b22.attachPush(b22PushCallback, &b22);
 
 	pinMode(MEGA_DO_0, OUTPUT);
 	pinMode(MEGA_DO_1, OUTPUT);
@@ -212,7 +212,7 @@ void setup() {
 
 //  dbSerialPrintln(CurrentPage);
 	zeroPresSensor();
-  Serial.println("==> READY MEGA");
+	Serial.println("==> READY MEGA");
 }
 
 
@@ -241,41 +241,42 @@ void loop() {
 	// Page 4 Setting alarm (over PIP, under IPP, O2_tolerance)
 
 	if(mode == 5) {
-    setupq = 0;
-    runningState = 0;
-    update2Nano();
-    Serial.println("WOKE"); Serial.flush();
+		setupq = 0;
+		runningState = 0;
+		update2Nano();
+		trigNePage(1);
+		Serial.println("WOKE"); Serial.flush();
 //    delay(100000);
 	} else {
-  	if(CurrentPage == 2){ // Untuk page 1
-      if(runningState == 0) { // kalau lagi off
-        mode = 1;
-      } else if(runningState == 1 && setupq != 0) { // kalau lagi on
-        mode = 2;
-      }
-    } else { //untuk page selain page main
-  		mode = 0;
-  		lastPage = CurrentPage;
-  	}
+		if(CurrentPage == 2) { // Untuk page 1
+			if(runningState == 0) { // kalau lagi off
+				mode = 1;
+			} else if(runningState == 1 && setupq != 0) { // kalau lagi on
+				mode = 2;
+			}
+		} else { //untuk page selain page main
+			mode = 0;
+			lastPage = CurrentPage;
+		}
 	}
 
 	Serial.println("CURRENTPAGE" + String(CurrentPage));
 	Serial.println("MODE" + String(mode));
 
-  // mode utk routine stuck setelah alarm
-  while (mode == 5) {
-    sendSetupToHMI('C');
-    setupq = 0;
-   Serial.println("------------------ mode5"); //delay(10000);
+	// mode utk routine stuck setelah alarm
+	while (mode == 5) {
+		sendSetupToHMI('C');
+		setupq = 0;
+		Serial.println("------------------ mode5"); //delay(10000);
 
-    if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
-      Serial.println("Reset system button pressed"); Serial.flush(); //delay(10000);
-      mode = 0;
-      setAlarm("99_LOW"); // Reset and send all alarms[] off
-      break;
-    }
+		if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
+			Serial.println("Reset system button pressed"); Serial.flush(); //delay(10000);
+			mode = 0;
+			setAlarm("99_LOW"); // Reset and send all alarms[] off
+			break;
+		}
 //    Serial.println("!!! ALARM HIGH. MACHINE STOPPED. FIX THE SETUP THEN PRESS ALARM RESET BUTTON !!!"); Serial.fulsh();
-  }
+	}
 
 	// NOT PAGE 1
 	while (mode == 0) {
@@ -297,9 +298,9 @@ void loop() {
 
 		//1. Update nilai Oksigen
 		oxygenUpdate();
-   pressureUpdate1();
-    readPEEP = false;
-    readIPP = false;
+		pressureUpdate1();
+		readPEEP = false;
+		readIPP = false;
 
 		//2. Cek kalau ganti halaman/state
 		if (CurrentPage != 2) {break;}
@@ -326,7 +327,7 @@ void loop() {
 		if(readPEEP) {
 			PEEPUpdate();
 			pip_value = 0;
-	    peakCount = 0;
+			peakCount = 0;
 			readPEEP = false;
 			exhaleStage = false;
 		}
@@ -340,16 +341,16 @@ void loop() {
 		pressureUpdate1();
 		oxygenUpdate();
 
-    Serial.println("SETUPQ : " + String(setupq));
+		Serial.println("SETUPQ : " + String(setupq));
 
 		//3. ROUTINE EXHALE ---
 		if(exhaleStage) {
-      digitalWrite(warningPressure_PIN,HIGH);
-      digitalWrite(warningPEEP_PIN, HIGH);
+			digitalWrite(warningPressure_PIN,HIGH);
+			digitalWrite(warningPEEP_PIN, HIGH);
 			Serial.println("EXHALING");
 
 			if(setupq==2) {
-        setAlarm("04_OFF");
+				setAlarm("04_OFF");
 				//1. PEEP Pressure HOLD (CPAP) if mode B
 //        pressure_float = 1;/
 				if(pressure_float < PEEP_LIMIT) {
@@ -373,7 +374,7 @@ void loop() {
 
 		//4. ROUTINE INHALE ---
 		else {
-      setAlarm("04_OFF");
+			setAlarm("04_OFF");
 			Serial.println("INHALING");
 
 			//0. Cek Fighting
@@ -405,18 +406,25 @@ void loop() {
 
 //== FUNCTIONS =============================================
 
-void sendSetupToHMI(char setupHMI){
-	// !!HOMEWORK!!
-	//koding untuk mengirimkan teks ke display HMI
+void trigNePage(int page) {
+	Serial2.print("page ");
+	Serial2.print(page);
+	Serial2.write(0xff);
+	Serial2.write(0xff);
+	Serial2.write(0xff);
+}
+
+void sendSetupToHMI(char setupHMI) {
 	String textbuffer;
 
 	if(setupHMI = 'A') {
 		textbuffer = "Mandatory Volume Control";
-	} else if (setupHMI = 'B'){
+	} else if (setupHMI = 'B') {
 		textbuffer = "Assisted Volume Control";
-	} else if (setupHMI = 'C'){
-		textbuffer = "Stop";
+	} else if (setupHMI = 'C') {
+		textbuffer = "FORCE STOP";
 	}
+
 	Serial2.print("t0.txt=");
 	Serial2.print("\"");
 	Serial2.print(textbuffer); //buffer teks
@@ -436,60 +444,60 @@ void readIPPQ(){
 
 //-- Zero-ing Pressure Sensor
 float calcPres(float pres_rawq){
-  float calc = 0.3135*pres_rawq-1316.0693-3.14;
+	float calc = 0.3135*pres_rawq-1316.0693-3.14;
 
-  return calc;
+	return calc;
 }
 
 void zeroPresSensor(){
-  //0. Create buffer for value and histogram
-  float val[buffsize];
-  float lastVal;
-  int index_terpilih = 0;
-  int mode_count = 0;
-  int valcount = 0;
+	//0. Create buffer for value and histogram
+	float val[buffsize];
+	float lastVal;
+	int index_terpilih = 0;
+	int mode_count = 0;
+	int valcount = 0;
 	peakCount = 0;
 
-  //1. Ambil x data
-  for(int i=0; i<buffsize; i++){
-    val[i] = calcPres(ads.readADC_SingleEnded(2))+offset;
-  }
+	//1. Ambil x data
+	for(int i=0; i<buffsize; i++) {
+		val[i] = calcPres(ads.readADC_SingleEnded(2))+offset;
+	}
 
-  sortArray(val, buffsize);
+	sortArray(val, buffsize);
 
-  //2. create histogram
-  for (int i=0; i<buffsize; i++){
-    if(lastVal != val[i]){
-      lastVal = val[i];
-      valcount = countOccurances(val, val[i]);
-      if(valcount>=mode_count){
-        mode_count = valcount;
-        index_terpilih = i;
-      }
-    }
-  }
+	//2. create histogram
+	for (int i=0; i<buffsize; i++) {
+		if(lastVal != val[i]) {
+			lastVal = val[i];
+			valcount = countOccurances(val, val[i]);
+			if(valcount>=mode_count) {
+				mode_count = valcount;
+				index_terpilih = i;
+			}
+		}
+	}
 
-  //3. Return Mode
-  offset += -1*val[index_terpilih];
+	//3. Return Mode
+	offset += -1*val[index_terpilih];
 //  Serial.println("OFFSET : " + String(offset));
 }
 
 int countOccurances(float val[], float q){
-  int count = 0;
-  for(int i=0; i<buffsize; i++){
-    if(val[i] == q){
-      count++;
-    }
-  }
-  return count;
+	int count = 0;
+	for(int i=0; i<buffsize; i++) {
+		if(val[i] == q) {
+			count++;
+		}
+	}
+	return count;
 }
 
 //-- Sending necessary information to Arduino Nano ---------
 //-- (motor controller) through Serial2 port ---------------
 void update2Nano() {
-  int stateq;
-  if(runningState==0 || setupq == 0){stateq = 0; digitalWrite(pinStartMotor, HIGH);} //off
-  else{stateq = setupq; digitalWrite(pinStartMotor, LOW);} //on
+	int stateq;
+	if(runningState==0 || setupq == 0) {stateq = 0; digitalWrite(pinStartMotor, HIGH);} //off
+	else{stateq = setupq; digitalWrite(pinStartMotor, LOW);} //on
 	String message = '<' + String(stateq) + ','
 	                 + String(Vti) + ','
 	                 + String(ERat) + ','
@@ -592,8 +600,8 @@ void b17PushCallback(void *ptr) {
 	//default di min 20 max 40
 	//asumsi variabel = HPL
 	PIP_LIMIT--;
-	if(PIP_LIMIT<=20){PIP_LIMIT=20;}
-  dbSerialPrintln("PIP" + String(PIP_LIMIT));
+	if(PIP_LIMIT<=20) {PIP_LIMIT=20;}
+	dbSerialPrintln("PIP" + String(PIP_LIMIT));
 }
 
 void b18PushCallback(void *ptr) {
@@ -601,8 +609,8 @@ void b18PushCallback(void *ptr) {
 	//default di 20 max 40
 	//asumsi variabel = HPL
 	PIP_LIMIT++;
-	if(PIP_LIMIT>=40){PIP_LIMIT=40;}
-  dbSerialPrintln("PIP" + String(PIP_LIMIT));
+	if(PIP_LIMIT>=40) {PIP_LIMIT=40;}
+	dbSerialPrintln("PIP" + String(PIP_LIMIT));
 }
 
 void b19PushCallback(void *ptr) {
@@ -613,7 +621,7 @@ void b19PushCallback(void *ptr) {
 	   LPL--;
 	   if(LPL<=20){LPL=20;}
 	 */
-  dbSerialPrintln("LPL-");
+	dbSerialPrintln("LPL-");
 }
 
 void b20PushCallback(void *ptr) {
@@ -624,7 +632,7 @@ void b20PushCallback(void *ptr) {
 	   LPL++;
 	   if(LPL>=35){LPL=35;}
 	 */
-  dbSerialPrintln("LPL+");
+	dbSerialPrintln("LPL+");
 }
 
 void b21PushCallback(void *ptr) {
@@ -635,7 +643,7 @@ void b21PushCallback(void *ptr) {
 	   O2tol--;
 	   if(HPL<=5){O2tol=5;}
 	 */
-  dbSerialPrintln("O2-");
+	dbSerialPrintln("O2-");
 }
 
 void b22PushCallback(void *ptr) {
@@ -646,7 +654,7 @@ void b22PushCallback(void *ptr) {
 	   O2tol++;
 	   if(HPL>=30){O2tol=30;}
 	 */
-  dbSerialPrintln("O2+");
+	dbSerialPrintln("O2+");
 }
 
 void bt0PushCallback(void *ptr) {
@@ -661,7 +669,7 @@ void bt5PushCallback(void *ptr) { //mandatory toggle
 // asumsi disimpan di varlokal
 	uint32_t varlokal;
 	bt5.getValue(&varlokal);
-  Serial.println("VARLOKAL" + String(varlokal));
+	Serial.println("VARLOKAL" + String(varlokal));
 	if(varlokal==1) {setupq=1;}
 	else{setupq=0;}
 	dbSerialPrintln("SETUP" + String(setupq));
@@ -672,7 +680,7 @@ void bt3PushCallback(void *ptr) { //assisted
 //uint32_t runningState;
 	uint32_t varlokal;
 	bt3.getValue(&varlokal);
-  Serial.println("VARLOKAL" + String(varlokal));
+	Serial.println("VARLOKAL" + String(varlokal));
 	if(varlokal==1) {setupq=2;}
 	else{setupq=0;}
 	dbSerialPrintln("SETUP" + String(setupq));
@@ -740,13 +748,13 @@ double PEEP_raw, PEEP_float;
 
 void pressureUpdate1() {
 	pressure_float = calcPres(ads.readADC_SingleEnded(2)) + offset;
-  Serial.println("Pres: " + String(pressure_float));
+	Serial.println("Pres: " + String(pressure_float));
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 
 	if(pip_value < pressure_float) {
 		pip_value = pressure_float;
 	} else {
-		if(pip_value - pressure_float > 5){
+		if(pip_value - pressure_float > 5) {
 			peakCount++;
 			pip_value = 0;
 		}
@@ -810,7 +818,7 @@ bool fighting(){
 	// cek fighting pakai multiple Peak
 	bool fight = false;
 
-	if(peakCount > 2){
+	if(peakCount > 2) {
 		fight = true;
 		peakCount = 0;
 	}
@@ -848,15 +856,15 @@ void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
 
 //	Serial3.println(msg); Serial3.flush();
 
-  // Alternative communication using digitalWrite
-  digitalWrite(MEGA_DO_0, !(alarms[0]));
-  digitalWrite(MEGA_DO_1, !(alarms[1]));
-  digitalWrite(MEGA_DO_2, !(alarms[2]));
-  digitalWrite(MEGA_DO_3, !(alarms[3]));
-  digitalWrite(MEGA_DO_4, !(alarms[4]));
-  digitalWrite(MEGA_DO_5, !(alarms[5]));
-  digitalWrite(MEGA_DO_6, !(alarms[6]));
-  digitalWrite(MEGA_DO_7, !(alarms[7]));
+	// Alternative communication using digitalWrite
+	digitalWrite(MEGA_DO_0, !(alarms[0]));
+	digitalWrite(MEGA_DO_1, !(alarms[1]));
+	digitalWrite(MEGA_DO_2, !(alarms[2]));
+	digitalWrite(MEGA_DO_3, !(alarms[3]));
+	digitalWrite(MEGA_DO_4, !(alarms[4]));
+	digitalWrite(MEGA_DO_5, !(alarms[5]));
+	digitalWrite(MEGA_DO_6, !(alarms[6]));
+	digitalWrite(MEGA_DO_7, !(alarms[7]));
 
 	Serial.println(msg);
 }
