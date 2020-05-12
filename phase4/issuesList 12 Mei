@@ -1,0 +1,12 @@
+Issues
+1. Pas pindah mode 5, ga ngirim sinyal berhenti
+- Udah ngirim sinyal lewat serial, tapi nano bacanya telat
+- Try : tambah digital untuk on/off motor <- Solusi yg dipakai
+== SOLVED
+
+2. Spurious ga kebaca di mega dan nano (ga ganti mode langsung)
+- Instruksi spurious udah ke detect ke nano motor dan mega. Tapi state belum berubah (SOLVED)
+- Isu Optional : Digital on/off motor kecepetan, jadi nano motor sudah tau kalau harus on tapi nunggu serial untuk tau setup yg mana (untuk sekarang bisa diignore dulu)
+== SOLVED
+
+3. Fighting ga kebaca di nano (ga nyetop) -- SOlusi sama kayak isu #1
