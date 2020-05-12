@@ -28,6 +28,33 @@ void getCommand() {
 }
 
 
+#define MEGA_DO_0 10
+#define MEGA_DO_1 11
+#define MEGA_DO_2 12
+#define MEGA_DO_3 A1
+#define MEGA_DO_4 A2
+#define MEGA_DO_5 A3
+#define MEGA_DO_6 A4
+#define MEGA_DO_7 A5
+
+void getCommand_alt() {
+  alarm[0] = digitalRead(MEGA_DO_0);
+  alarm[1] = digitalRead(MEGA_DO_1);
+  alarm[2] = digitalRead(MEGA_DO_2);
+  alarm[3] = digitalRead(MEGA_DO_3);
+  alarm[4] = digitalRead(MEGA_DO_4);
+  alarm[5] = digitalRead(MEGA_DO_5);
+  alarm[6] = digitalRead(MEGA_DO_6);
+  alarm[7] = digitalRead(MEGA_DO_7);
+
+  Serial.print("8 pin fr Mega digitalRead(): <" + String(alarm[0]));
+  for (int i = 1; i < 8; i++) {
+    Serial.print("," + String(alarm[i]));
+  }
+  Serial.println(">");
+}
+
+
 String readMega() {
   unsigned int timeout = 200;
   unsigned long time_begin = millis();
@@ -225,7 +252,10 @@ void setup() {
 
 void loop() {
   // Get command line from SerialMega
-  getCommand();
+//  getCommand();
+
+  // Get alarm signal from Mega digital write
+  getCommand_alt();
 
   // Read alarm silence button
   if (!digitalRead(SILENCE_BUTTON_PIN) && silence_state == false) {
