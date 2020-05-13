@@ -1,31 +1,56 @@
-#include <SoftwareSerial.h>
-SoftwareSerial SerialMega(11,12); // RX, TX
+bool alarm[] = {0,0,0,0,0,0,0,0};
 
 
-String command = "<0,0,0,0,0,0,0,0,0>";
-bool alarm[] = {0,0,0,0,0,0,0,0,0};
-String packet_buffer = "";
-void getCommand() {
-  String received = readMega();
-  if (received[0] == '<') {packet_buffer = received;}
-  else {packet_buffer += received;}
-
-  if (packet_buffer[packet_buffer.length() - 1] == '>') {
-    command = packet_buffer;
-
-    // Parsing command
-    String txt = packet_buffer.substring(1,packet_buffer.length()-1);
-    int indexStart = 0;
-    int indexEnd = 0;
-    for(int i = 0; i<9; i++) {
-      indexEnd = txt.indexOf(",", indexStart);
-      alarm[i] = txt.substring(indexStart, indexEnd).toInt();
-      indexStart = indexEnd+1;
-      //Serial.println(String(i) + ": " + bufferq[i]);
-    }
-  }
-  Serial.println(command); Serial.flush();
-}
+//#include <SoftwareSerial.h>
+//SoftwareSerial SerialMega(11,12); // RX, TX
+//
+//String command = "<0,0,0,0,0,0,0,0>";
+//String packet_buffer = "";
+//
+//void getCommand() {
+//  String received = readMega();
+//  if (received[0] == '<') {packet_buffer = received;}
+//  else {packet_buffer += received;}
+//
+//  if (packet_buffer[packet_buffer.length() - 1] == '>') {
+//    command = packet_buffer;
+//
+//    // Parsing command
+//    String txt = packet_buffer.substring(1,packet_buffer.length()-1);
+//    int indexStart = 0;
+//    int indexEnd = 0;
+//    for(int i = 0; i<8; i++) {
+//      indexEnd = txt.indexOf(",", indexStart);
+//      alarm[i] = txt.substring(indexStart, indexEnd).toInt();
+//      indexStart = indexEnd+1;
+//      //Serial.println(String(i) + ": " + bufferq[i]);
+//    }
+//  }
+//  Serial.println(command); Serial.flush();
+//}
+//
+//String readMega() {
+//  unsigned int timeout = 200;
+//  unsigned long time_begin = millis();
+//  bool quit = false;
+//  String packet = "";
+//
+//  while (!quit){
+//    if (SerialMega.available() > 0){
+//      char x = SerialMega.read();
+//      if (x == '>'){
+//        packet += x;
+//        quit = true;
+//      } else {
+//        if (x == '<'){packet = "";}
+//        packet += x;
+//      }
+//    }
+//    if (millis() - time_begin > timeout) {quit = true;}
+//  }
+//
+//  return packet;
+//}
 
 
 #define MEGA_DO_0 10
@@ -47,35 +72,12 @@ void getCommand_alt() {
   alarm[6] = !(digitalRead(MEGA_DO_6));
   alarm[7] = !(digitalRead(MEGA_DO_7));
 
-  Serial.print("8 pin fr Mega digitalRead(): <" + String(alarm[0]));
+  Serial.print("<" + String(alarm[0]));
   for (int i = 1; i < 8; i++) {
     Serial.print("," + String(alarm[i]));
   }
-  Serial.println(">");
-}
-
-
-String readMega() {
-  unsigned int timeout = 200;
-  unsigned long time_begin = millis();
-  bool quit = false;
-  String packet = "";
-
-  while (!quit){
-    if (SerialMega.available() > 0){
-      char x = SerialMega.read();
-      if (x == '>'){
-        packet += x;
-        quit = true;
-      } else {
-        if (x == '<'){packet = "";}
-        packet += x;
-      }
-    }
-    if (millis() - time_begin > timeout) {quit = true;}
-  }
-
-  return packet;
+  Serial.print(">");
+//  Serial.println();
 }
 
 
@@ -95,7 +97,7 @@ void buzzer_SINGLE() {
 
   // LOW alarm
   if (buzzer_SINGLE_current_state == 1 && buzzer_SINGLE_prev_state == 1) {
-    buzzer_SINGLE_phase_normalized = (float(now - buzzer_SINGLE_begin)/400) - int((now - buzzer_SINGLE_begin)/400);
+    buzzer_SINGLE_phase_normalized = (float(now - buzzer_SINGLE_begin)/800) - int((now - buzzer_SINGLE_begin)/800);
 //    Serial.println(buzzer_SINGLE_phase_normalized); Serial.flush();
     if (buzzer_SINGLE_phase_normalized < 0.5) {buzzer_SINGLE_beep_off();}
     else {buzzer_SINGLE_beep_on();}
@@ -103,7 +105,7 @@ void buzzer_SINGLE() {
 
   // MEDIUM alarm
   if (buzzer_SINGLE_current_state == 2 && buzzer_SINGLE_prev_state == 2) {
-    buzzer_SINGLE_phase_normalized = (float(now - buzzer_SINGLE_begin)/800) - int((now - buzzer_SINGLE_begin)/800);
+    buzzer_SINGLE_phase_normalized = (float(now - buzzer_SINGLE_begin)/400) - int((now - buzzer_SINGLE_begin)/400);
 //    Serial.println(buzzer_SINGLE_phase_normalized); Serial.flush();
     if (buzzer_SINGLE_phase_normalized < 0.5) {buzzer_SINGLE_beep_off();}
     else {buzzer_SINGLE_beep_on();}
@@ -111,7 +113,7 @@ void buzzer_SINGLE() {
 
   // HIGH alarm
   if (buzzer_SINGLE_current_state == 3 && buzzer_SINGLE_prev_state == 3) {
-    buzzer_SINGLE_phase_normalized = (float(now - buzzer_SINGLE_begin)/400) - int((now - buzzer_SINGLE_begin)/400);
+//    buzzer_SINGLE_phase_normalized = (float(now - buzzer_SINGLE_begin)/400) - int((now - buzzer_SINGLE_begin)/400);
     buzzer_SINGLE_phase_normalized = 1;
 //    Serial.println(buzzer_SINGLE_phase_normalized); Serial.flush();
     if (buzzer_SINGLE_phase_normalized < 0.5) {buzzer_SINGLE_beep_off();}
@@ -220,7 +222,6 @@ void buzzer_SINGLE_beep_off() {digitalWrite(BUZZER_SINGLE_PIN,LOW);}
 #define ALARM_5_LED_PIN 7
 #define ALARM_6_LED_PIN 8
 #define ALARM_7_LED_PIN 9
-#define ALARM_8_LED_PIN 10
 
 bool silence_state = false;
 unsigned long silence_begin = 0;
@@ -233,7 +234,8 @@ void setup() {
   Serial.begin(115200);
 
   // Serial from mega begin
-  SerialMega.begin(115200);
+//  SerialMega.begin(115200);
+
   pinMode(SILENCE_BUTTON_PIN, INPUT_PULLUP);
   pinMode(ALARM_0_LED_PIN, OUTPUT);
   pinMode(ALARM_1_LED_PIN, OUTPUT);
@@ -243,7 +245,6 @@ void setup() {
   pinMode(ALARM_5_LED_PIN, OUTPUT);
   pinMode(ALARM_6_LED_PIN, OUTPUT);
   pinMode(ALARM_7_LED_PIN, OUTPUT);
-  pinMode(ALARM_8_LED_PIN, OUTPUT);
   pinMode(BUZZER_SINGLE_PIN, OUTPUT);
 //  pinMode(BUZZER_0_PIN, OUTPUT);
 //  pinMode(BUZZER_1_PIN, OUTPUT);
@@ -265,31 +266,36 @@ void loop() {
   // Get command line from SerialMega
 //  getCommand();
 
-  // Get alarm signal from Mega digital write
+  // (alternative) Get alarm signal from Mega digital write
   getCommand_alt();
 
   // Read alarm silence button
-  if (!digitalRead(SILENCE_BUTTON_PIN) && silence_state == false) {
+  now_dummy = millis();
+  silence_button_dummy = !(digitalRead(SILENCE_BUTTON_PIN));
+  
+  if (silence_button_dummy && !silence_state && (now_dummy - silence_begin > 200)) {
     silence_state = true;
     silence_begin = millis();
   }
 
-  silence_button_dummy = !(digitalRead(SILENCE_BUTTON_PIN));
-  now_dummy = millis();
-  if (silence_button_dummy && silence_state == true && ((now_dummy - silence_begin) > 200)) {
+//  Serial.println(" sBtn_prssd: " + String(silence_button_dummy)
+//                 + " | sStt: " + String(silence_state)
+//                 + " | now: " + String(now_dummy - silence_begin));
+
+  if (silence_button_dummy && silence_state && ((now_dummy - silence_begin) > 200)) {
     silence_state = false;
-    silence_begin = 0;
+    silence_begin = millis();
   }
 
   // Silence timeout check
-  if (millis() - silence_begin > silence_timeout) {silence_state = false;}
+  if (now_dummy - silence_begin > silence_timeout) {silence_state = false;}
 //  Serial.println("Silence state is: " + String(silence_state)); Serial.flush();
 
 // Buzzer routine
   // Update buzzer state
   buzzer0_current_state = alarm[0] || alarm[1] || alarm[2] || alarm[3];   // alarm type HIGH
-  buzzer1_current_state = alarm[4] || alarm[5] || alarm[6] || alarm[7];   // alarm type MEDIUM
-  buzzer2_current_state = alarm[8]; // alarm type LOW
+  buzzer1_current_state = alarm[4] || alarm[5] || alarm[6];   // alarm type MEDIUM
+  buzzer2_current_state = alarm[7]; // alarm type LOW
 
   if (buzzer0_current_state) {buzzer_SINGLE_current_state = 3;}
   else if (buzzer1_current_state) {buzzer_SINGLE_current_state = 2;}
@@ -299,7 +305,7 @@ void loop() {
 //  Serial.println("buzzer0 (HIGH) state: " + String(buzzer0_current_state)); Serial.flush();
 //  Serial.println("buzzer1 (MEDIUM) state: " + String(buzzer1_current_state)); Serial.flush();
 //  Serial.println("buzzer2 (LOW) state: " + String(buzzer2_current_state)); Serial.flush();
-//  Serial.println("buzzer_SINGLE state (1 = LOW, 2 = MEDIUM, 3 = HIGH): " + String(buzzer_SINGLE_current_state)); Serial.flush();
+  Serial.println("buzzer_SINGLE state (1 = LOW, 2 = MEDIUM, 3 = HIGH): " + String(buzzer_SINGLE_current_state)); Serial.flush();
 
   if (silence_state) {
     buzzer_SINGLE_beep_off();
@@ -323,5 +329,4 @@ void loop() {
   digitalWrite(ALARM_5_LED_PIN,alarm[5]);
   digitalWrite(ALARM_6_LED_PIN,alarm[6]);
   digitalWrite(ALARM_7_LED_PIN,alarm[7]);
-  digitalWrite(ALARM_8_LED_PIN,alarm[8]);
 }
