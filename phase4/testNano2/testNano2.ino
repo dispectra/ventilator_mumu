@@ -247,6 +247,7 @@ void loop() {
 
 		// Callibrate Maju & Mundur Button
 		if(digitalRead(7) == LOW) {
+      digitalWrite(enaPin, LOW);
 			digitalWrite(dirPin, dirInhale);
 			if(digitalRead(limitSwitchIn)) {
 				Serial.println("Cal In");
@@ -258,7 +259,7 @@ void loop() {
 			}
 			delayMicroseconds(2000);
 		} else if(digitalRead(8) == LOW) {
-
+      digitalWrite(enaPin, LOW);
 			digitalWrite(dirPin, !dirInhale);
 			if(digitalRead(limitSwitchEx)) {
 				Serial.println("Cal Out");
