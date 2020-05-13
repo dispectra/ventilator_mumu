@@ -25,7 +25,8 @@ SoftwareSerial SerialM(11,12); //RX, TX
 // microstepping = settingan microstepping (1 / 2 / 4 / 8 / 16)
 // dirInhale = arah untuk inhale (HIGH / LOW)
 #define microstepping 4
-#define dirInhale HIGH
+#define dirInhale LOW
+// low dm860, high leadshine
 
 //-- PIN FISIK =======================================================================
 #define enaPin 10
@@ -66,7 +67,7 @@ String lastData = "<0,0,0,0>";
 bool spuriousPrev = false;
 
 unsigned long now, stepTidal, delayInhale, delayExhale, timeInEx;
-float timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay;
+double timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay;
 
 //-- SETUP =========================================================================
 void setup() {
@@ -114,10 +115,11 @@ void loop() {
 
 	// 2. IF RUNNING
 	if (digitalRead(pinStartMotor) == LOW && runningState != 0) {
-		digitalWrite(enaPin, LOW);
+//		digitalWrite(enaPin, LOW);
 
 		if(stateNow == 0) {
 			Serial.println("==> STATUS: ON");
+     digitalWrite(enaPin, LOW);
 		}
 
 		// 0. INDICATE INHALE START
@@ -235,10 +237,11 @@ void loop() {
 		Serial.println("----");
 		warnPres = false;
 		warnVol = false;
+    readPEEP(1);
 	} else {
 		// STATUS OFF
-		readPEEP(0);
-		readIPP(0);
+//		readPEEP(0);
+//		readIPP(0);
 		digitalWrite(enaPin, HIGH);
 		if(stateNow !=0) {
 			Serial.println("==> STATUS: OFF"); Serial.flush();

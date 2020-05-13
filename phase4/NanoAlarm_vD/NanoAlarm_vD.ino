@@ -99,7 +99,7 @@ void buzzer_SINGLE() {
   if (buzzer_SINGLE_current_state == 1 && buzzer_SINGLE_prev_state == 1) {
     buzzer_SINGLE_phase_normalized = (float(now - buzzer_SINGLE_begin)/800) - int((now - buzzer_SINGLE_begin)/800);
 //    Serial.println(buzzer_SINGLE_phase_normalized); Serial.flush();
-    if (buzzer_SINGLE_phase_normalized < 0.5) {buzzer_SINGLE_beep_off();}
+    if (buzzer_SINGLE_phase_normalized < 0.75) {buzzer_SINGLE_beep_off();}
     else {buzzer_SINGLE_beep_on();}
   }
 

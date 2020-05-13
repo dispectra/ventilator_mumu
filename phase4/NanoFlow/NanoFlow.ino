@@ -134,7 +134,7 @@ void loop() {
         Serial.println("-------------spurious");
         digitalWrite(pinSpur, LOW);
 //        delay(1000000);
-      }
+      } else {digitalWrite(pinSpur,HIGH); };
 
       warned = false;
     }
@@ -172,8 +172,8 @@ void loop() {
       Serial.println("VOL: " + String(vol_acc));
     }
   } else { //OFF Condition
-    readPEEP = false;
-    readPEEP = false;
+    readPEEP = true;
+    readIPP = false;
     zeroFlowSensor();
     digitalWrite(pinSpur, HIGH);
 
@@ -250,7 +250,7 @@ void readIPPQ(){readIPP = true;}
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = (90.1479*sqrt(flow_rawq)-5011.9318+35.80);
+  float calc = 1.2* (90.1479*sqrt(flow_rawq)-5011.9318+35.80);
 
   return calc;
 }

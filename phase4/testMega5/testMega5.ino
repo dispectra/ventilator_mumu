@@ -282,6 +282,7 @@ void loop() {
 	// NOT PAGE 1
 	while (mode == 0) {
 		zeroPresSensor();
+   peakCount = 0;
 
 		//0. Update bacaan nextion
 		nexLoop(nex_listen_list);
@@ -298,11 +299,12 @@ void loop() {
 
 		//0. Update bacaan nextion
 		nexLoop(nex_listen_list);
+   peakCount = 0;
 
 		//1. Update nilai Oksigen
 		oxygenUpdate();
 		pressureUpdate1();
-		readPEEP = false;
+		readPEEP = true;
 		readIPP = false;
 
 		//2. Cek kalau ganti halaman/state
@@ -379,6 +381,9 @@ void loop() {
 		else {
 //			setAlarm("04_OFF");
 			Serial.println("INHALING");
+     pressureUpdate1();
+     Serial.println("ASd ---- " + String(peakCount));
+     
 
 			//0. Cek Fighting
 			if(fighting()) {
@@ -757,7 +762,7 @@ void pressureUpdate1() {
 	if(peakq < pressure_float) {
 		peakq = pressure_float;
 	} else {
-		if(peakq - pressure_float > 5) {
+		if(peakq - pressure_float >= 5) {
 			peakCount++;
 			peakq = 0;
 		}
@@ -803,7 +808,7 @@ void oxygenUpdate() {
 	oxygen_raw = ads.readADC_Differential_0_1();
 	volts = (oxygen_raw * scalefactor);
 	oxygen_float = 10*volts/6;
-	int oxygen_int = int(oxygen_float);
+	int oxygen_int = int(round(oxygen_float));
 	if (oxygen_int==0) oxygen_int = 100;
 
   Serial.println(abs(int(Ox)-oxygen_int));
