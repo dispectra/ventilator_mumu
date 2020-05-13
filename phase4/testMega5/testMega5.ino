@@ -34,10 +34,10 @@ Servo servoOxigen;
 #define MEGA_DO_1 45
 #define MEGA_DO_2 46
 #define MEGA_DO_3 47
-#define MEGA_DO_4 48
-#define MEGA_DO_5 49
-#define MEGA_DO_6 50
-#define MEGA_DO_7 51
+#define MEGA_DO_4 49
+#define MEGA_DO_5 48
+#define MEGA_DO_6 51
+#define MEGA_DO_7 50
 
 boolean warningPressure = 0;
 boolean triggerInhale = 0;
@@ -71,7 +71,7 @@ int PIP_LIMIT = 20;
 int peakCount = 0;
 
 #define ButtonResetAlarm_PIN 36
-bool alarms[9] = {0,0,0,0,0,0,0,0,0};
+bool alarms[8] = {0,0,0,0,0,0,0,0};
 
 //NexNumber(page, ID, Nama)
 //!!HMI!!
@@ -126,7 +126,7 @@ NexTouch *nex_listen_list[] = {
 uint8_t pressure_int8;
 int pressure_raw;
 float pressure_float;
-
+int O2tol = 5;
 // KE-25 Oxygen Sensor + ADS1115 ADC board
 Adafruit_ADS1115 ads;
 float scalefactor = 0.1875F;
@@ -246,6 +246,7 @@ void loop() {
 		runningState = 0;
 		update2Nano();
 		trigNePage(1);
+    peakCount = 0;
 		Serial.println("WOKE"); Serial.flush();
 //    delay(100000);
 	} else {
@@ -266,7 +267,6 @@ void loop() {
 
 	// mode utk routine stuck setelah alarm
 	while (mode == 5) {
-		sendSetupToHMI('C');
 		setupq = 0;
 		Serial.println("------------------ mode5"); //delay(10000);
 
@@ -288,10 +288,12 @@ void loop() {
 
 		//1. Cek kalau ganti halaman/state
 		if (CurrentPage != lastPage) {break;}
+   
 	}
 
 	// PAGE 1, RUNNING STATE OFF
 	while (mode == 1) {
+    if (digitalRead(ButtonResetAlarm_PIN) == LOW) {setAlarm("99_LOW");}
 		// zeroPresSensor();
 
 		//0. Update bacaan nextion
@@ -310,6 +312,7 @@ void loop() {
 
 	// PAGE 1, RUNNING STATE ON
 	while (mode == 2) {
+    if (digitalRead(ButtonResetAlarm_PIN) == LOW) {setAlarm("99_LOW");}
 
 		// // Set Servos ------
 		// if(prev_Vti != Vti){
@@ -328,6 +331,7 @@ void loop() {
 		if(readPEEP) {
 			PEEPUpdate();
 			pip_value = 0;
+      peakq = 0;
 			peakCount = 0;
 			readPEEP = false;
 			exhaleStage = false;
@@ -351,11 +355,9 @@ void loop() {
 			Serial.println("EXHALING");
 
 			if(setupq==2) {
-				setAlarm("04_OFF");
+//				setAlarm("04_OFF");
 				//1. PEEP Pressure HOLD (CPAP) if mode B
-//        pressure_float = 1;/
 				if(pressure_float < PEEP_LIMIT) {
-//        Serial.println("MEH");/
 					digitalWrite(warningPEEP_PIN, LOW);
 					setAlarm("06_ON");
 				} else {
@@ -366,7 +368,7 @@ void loop() {
 				// Cek Spurious Trigger dari Arduino Sensor
 				if (digitalRead(pinSpurious)== LOW) {
 					setupq = 2;
-					sendSetupToHMI('B');
+					sendSetupToHMI();
 					setAlarm("04_ON");
 				}
 			}
@@ -375,7 +377,7 @@ void loop() {
 
 		//4. ROUTINE INHALE ---
 		else {
-			setAlarm("04_OFF");
+//			setAlarm("04_OFF");
 			Serial.println("INHALING");
 
 			//0. Cek Fighting
@@ -388,7 +390,7 @@ void loop() {
 			if (pressure_float > PIP_LIMIT) { // warning pressure to nano through digital pin
 				Serial.println("WARN!!");
 				digitalWrite(warningPressure_PIN,LOW);
-				delay(1);
+				delay(10);
 				digitalWrite(warningPressure_PIN,HIGH);
 				setAlarm("00_ON");
 				mode = 5; break;
@@ -415,24 +417,24 @@ void trigNePage(int page) {
 	Serial2.write(0xff);
 }
 
-void sendSetupToHMI(char setupHMI) {
+void sendSetupToHMI() {
 	String textbuffer;
 
-	if(setupHMI = 'A') {
-		textbuffer = "Mandatory Volume Control";
-	} else if (setupHMI = 'B') {
+//	if(setupHMI = 'A') {
+//		textbuffer = "Mandatory Volume Control";
+//	} else if (setupHMI = 'B') {
 		textbuffer = "Assisted Volume Control";
-	} else if (setupHMI = 'C') {
-		textbuffer = "FORCE STOP";
-	}
+//	} else if (setupHMI = 'C') {
+//		textbuffer = "FORCE STOP";
+//	}
 
-	Serial2.print("t0.txt=");
-	Serial2.print("\"");
-	Serial2.print(textbuffer); //buffer teks
-	Serial2.print("\"");
-	Serial2.write(0xff);
-	Serial2.write(0xff);
-	Serial2.write(0xff);
+	Serial2.print("t0.txt="); Serial.flush();
+	Serial2.print("\""); Serial.flush();
+	Serial2.print(textbuffer); Serial.flush(); //buffer teks
+	Serial2.print("\""); Serial.flush();
+	Serial2.write(0xff); Serial.flush();
+	Serial2.write(0xff); Serial.flush();
+	Serial2.write(0xff); Serial.flush();
 }
 
 //-- Interrupts
@@ -585,14 +587,14 @@ void b12PushCallback(void *ptr) {  // Press event for button b12
 	Ox++;
 	if(Ox>=100)
 	{Ox=100;}
-//  Serial.println(Ox);
+  Serial.println("OXX" + String(Ox));
 }
 
 void b11PushCallback(void *ptr) {  // Press event for button b11
 	Ox--;
 	if(Ox<=20)
 	{Ox=20;}
-//  Serial.println(Ox);
+Serial.println("OXX" + String(Ox));
 }
 
 //#UPDATE HMI
@@ -640,10 +642,8 @@ void b21PushCallback(void *ptr) {
 	//O2 tolerance --
 	//default di min 5 max 30
 	//asumsi variabel = O2tol
-	/*
 	   O2tol--;
-	   if(HPL<=5){O2tol=5;}
-	 */
+	   if(O2tol<=5){O2tol=5;}
 	dbSerialPrintln("O2-");
 }
 
@@ -651,10 +651,8 @@ void b22PushCallback(void *ptr) {
 	//O2 tolerance ++
 	//default di min 5 max 30
 	//asumsi variabel = O2tol
-	/*
 	   O2tol++;
-	   if(HPL>=30){O2tol=30;}
-	 */
+	   if(O2tol>=30){O2tol=30;}
 	dbSerialPrintln("O2+");
 }
 
@@ -752,9 +750,12 @@ void pressureUpdate1() {
 	Serial.println("Pres: " + String(pressure_float));
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 
+  if (pip_value < pressure_float) {
+    pip_value = pressure_float;
+  }
+
 	if(peakq < pressure_float) {
 		peakq = pressure_float;
-		pip_value = pressure_float;
 	} else {
 		if(peakq - pressure_float > 5) {
 			peakCount++;
@@ -805,6 +806,8 @@ void oxygenUpdate() {
 	int oxygen_int = int(oxygen_float);
 	if (oxygen_int==0) oxygen_int = 100;
 
+  Serial.println(abs(int(Ox)-oxygen_int));
+  if (abs(int(Ox) - oxygen_int ) >= O2tol) { setAlarm("07_ON");} else { setAlarm("07_OFF");};
 ///update///
 	Serial2.print("n7.val=");
 	Serial2.print(oxygen_int);
@@ -831,27 +834,26 @@ bool fighting(){
 //-- Send alarm mode to buzzer/alarm microcontroller ----
 void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
 	//Define array of alarm triggers
-	//alarmzz[0] = High pressure exceeded PIP (HIGH)
+	//alarmzz[0] = High pressure exceeded PIP (HIGH) v
 	//alarmzz[1] = Pressure too low (HIGH)
-	//alarmzz[2] = Patient is fighting (HIGH)
+	//alarmzz[2] = Patient is fighting (HIGH) v
 	//alarmzz[3] = Overcurrent fault (HIGH)
-	//alarmzz[4] = Sporious breath (MEDIUM)
+	//alarmzz[4] = Sporious breath (MEDIUM) v
 	//alarmzz[5] = Overtidal volume (MEDIUM)
-	//alarmzz[6] = Low PEEP (MEDIUM)
-	//alarmzz[7] =
-	//alarmzz[8] = Low/Oversupply of Oxygen (LOW)
+	//alarmzz[6] = Low PEEP (MEDIUM) v
+	//alarmzz[7] = Low/Oversupply of Oxygen (LOW) v
 
 	int key_index = key.substring(0,2).toInt();
 //  Serial.println(key_index);  // debugging
 	if (key.substring(3) == "ON") {alarms[key_index] = 1;}
 	else if (key_index == 99) {
-		for (int j = 0; j<9; j++) {alarms[j] = 0;}
+		for (int j = 0; j<8; j++) {alarms[j] = 0;}
 	}
 	else {alarms[key_index] = 0;}
 
 	String msg = "<";
 	msg = msg + String(alarms[0]);
-	for(int i = 1; i<9; i++) {
+	for(int i = 1; i<8; i++) {
 		msg = msg + "," + String(alarms[i]);
 	}
 	msg = msg + ">";

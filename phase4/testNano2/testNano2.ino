@@ -25,7 +25,7 @@ SoftwareSerial SerialM(11,12); //RX, TX
 // microstepping = settingan microstepping (1 / 2 / 4 / 8 / 16)
 // dirInhale = arah untuk inhale (HIGH / LOW)
 #define microstepping 4
-#define dirInhale LOW
+#define dirInhale HIGH
 
 //-- PIN FISIK =======================================================================
 #define enaPin 10
@@ -113,7 +113,7 @@ void loop() {
 	updateAllGlobalVars();
 
 	// 2. IF RUNNING
-	if (digitalRead(pinStartMotor) == LOW ) {
+	if (digitalRead(pinStartMotor) == LOW && runningState != 0) {
 		digitalWrite(enaPin, LOW);
 
 		if(stateNow == 0) {
@@ -208,21 +208,25 @@ void loop() {
 				spuriousPrev = true;
 			}
 
-			// 3. CPAP If spurious
-			if (spuriousPrev) {
+      if (spuriousPrev) {
         runningState = 2;
-//      Serial.println(checkPEEP());/
-				while(checkPEEP()){ // kalau PEEP blm melewati batas
-//        Serial.println(checkPEEP());/
-          if(digitalRead(limitSwitchIn)){
-  					digitalWrite(dirPin, dirInhale);
-  					digitalWrite(stepPin,HIGH);
-  					delayMicroseconds(1000);
-  					digitalWrite(stepPin,LOW);
-  					delayMicroseconds(1000);
-          }
-				}
-			}
+      }
+
+			// 3. CPAP If spurious
+//			if (spuriousPrev) {
+//        runningState = 2;
+////      Serial.println(checkPEEP());/
+//				while(checkPEEP()){ // kalau PEEP blm melewati batas
+////        Serial.println(checkPEEP());/
+//          if(digitalRead(limitSwitchIn)){
+//  					digitalWrite(dirPin, dirInhale);
+//  					digitalWrite(stepPin,HIGH);
+//  					delayMicroseconds(1000);
+//  					digitalWrite(stepPin,LOW);
+//  					delayMicroseconds(1000);
+//          }
+//				}
+//			}
 		}
 
 		Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal));
@@ -243,7 +247,7 @@ void loop() {
 
 		// Callibrate Maju & Mundur Button
 		if(digitalRead(7) == LOW) {
-			digitalWrite(dirPin, LOW);
+			digitalWrite(dirPin, dirInhale);
 			if(digitalRead(limitSwitchIn)) {
 				Serial.println("Cal In");
 				digitalWrite(stepPin, HIGH);
@@ -255,7 +259,7 @@ void loop() {
 			delayMicroseconds(2000);
 		} else if(digitalRead(8) == LOW) {
 
-			digitalWrite(dirPin, HIGH);
+			digitalWrite(dirPin, !dirInhale);
 			if(digitalRead(limitSwitchEx)) {
 				Serial.println("Cal Out");
 				digitalWrite(stepPin, HIGH);
@@ -565,7 +569,7 @@ bool checkSpurious(){
 //!REMEBER!!
 bool checkPEEP(){
 	bool check = !digitalRead(pinPresHold);
-	return false;
+	return check;
 }
 
 void warnVolQ(){
@@ -580,17 +584,17 @@ void warnPresQ(){
 }
 
 bool checkPressure(){
-  Serial.println("WarnPres = " + String(warnPres)); Serial.flush();
+//  Serial.println("WarnPres = " + String(warnPres)); Serial.flush();
 	return warnPres;
 }
 
 bool checkVolume(){
-  Serial.println("Cek Vol = " + String(warnVol)); Serial.flush();
+//  Serial.println("Cek Vol = " + String(warnVol)); Serial.flush();
 	return warnVol;
 }
 
 bool checkVolumePres(){
-  Serial.println("WarnCekPres = " + String(warnVol || warnPres)); Serial.flush();
+//  Serial.println("WarnCekPres = " + String(warnVol || warnPres)); Serial.flush();
 	return warnVol || warnPres;
 }
 

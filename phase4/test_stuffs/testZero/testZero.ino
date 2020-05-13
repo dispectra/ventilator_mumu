@@ -7,9 +7,10 @@ Adafruit_ADS1115 ads;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(6, INPUT_PULLUP);
+//  pinMode(6, INPUT_PULLUP);
   ads.begin();
   ads.setGain(GAIN_SIXTEEN);
+  zeroFlowSensor();
 }
 
 float offset;
@@ -20,17 +21,19 @@ unsigned long now;
 void loop() {
   // put your main code here, to run repeatedly:
   
-  if(digitalRead(6) == LOW){
-//    Serial.println("BEFORE =");
-    zeroFlowSensor();
-//    Serial.println("AFTER");
-    Serial.println(micros()-now);
-    for(int i=0; i<buffsize; i++){
-      Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
-    }
-//  } else {
-//   Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
-  }
+//  if(digitalRead(6) == LOW){
+////    Serial.println("BEFORE =");
+//    zeroFlowSensor();
+////    Serial.println("AFTER");
+//    Serial.println(micros()-now);
+//    for(int i=0; i<buffsize; i++){
+//      Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
+//    }
+////  } else {
+////   Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
+//  }
+
+  Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
   delay(10);
 }
 

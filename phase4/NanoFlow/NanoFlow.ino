@@ -54,7 +54,7 @@ void setup() {
 
   pinMode(pinVolWarn, OUTPUT);
   pinMode(pinSpur, OUTPUT);
-  
+
   digitalWrite(pinVolWarn, HIGH);
   digitalWrite(pinSpur, HIGH);
   nowq = micros();
@@ -72,18 +72,20 @@ void loop() {
   if(runningState != 0){
     //0a. Read Flow Value
     flow_raw = ads.readADC_Differential_0_1();
-    flow_val = 10; //calcFlow(flow_raw) + offset;
+    flow_val =  calcFlow(flow_raw) + offset;
 
     //0b. Remove Noise Values
     if(abs(flow_val) <= 1
         || abs(roundf(flow_val*100.0)/100.0) == 3.24
         || abs(roundf(flow_val*100.0)/100.0) == 0.81
         || abs(roundf(flow_val*100.0)/100.0) == 4.06
+        || abs(roundf(flow_val*100.0)/100.0) == 2.51
         || abs(roundf(flow_val*100.0)/100.0) == 4.87
         || abs(roundf(flow_val*100.0)/100.0) == 5.68
         || abs(roundf(flow_val*100.0)/100.0) == 2.34
         || abs(roundf(flow_val*100.0)/100.0) == 1.62
         || abs(roundf(flow_val*100.0)/100.0) == 1.63
+        || abs(roundf(flow_val*100.0)/100.0) == 1.68
         || abs(roundf(flow_val*100.0)/100.0) == 1.56
         ){flow_val=0;}
 
@@ -117,7 +119,7 @@ void loop() {
         unsigned long nowa = millis();
         while(millis()-nowa < 500) {
           flow_raw = ads.readADC_Differential_0_1();
-          flow_val = 10; //calcFlow(flow_raw) + offset;
+          flow_val = calcFlow(flow_raw) + offset;
         }
         flag_delayFlow = false;}
       digitalWrite(pinVolWarn, HIGH);
@@ -129,7 +131,7 @@ void loop() {
 
       //0. Cek Spurious
       if(spuriousDetect()){
-        Serial.println("-------------spurious"); 
+        Serial.println("-------------spurious");
         digitalWrite(pinSpur, LOW);
 //        delay(1000000);
       }
@@ -182,6 +184,9 @@ void loop() {
     //0b. Remove Noise Values
     if(abs(flow_val) <= 1
         || abs(roundf(flow_val*100.0)/100.0) == 3.24
+        || abs(roundf(flow_val*100.0)/100.0) == 3.89
+        || abs(roundf(flow_val*100.0)/100.0) == 3.12
+        || abs(roundf(flow_val*100.0)/100.0) == 3.90
         || abs(roundf(flow_val*100.0)/100.0) == 0.81
         || abs(roundf(flow_val*100.0)/100.0) == 4.06
         || abs(roundf(flow_val*100.0)/100.0) == 4.87
@@ -192,7 +197,7 @@ void loop() {
         || abs(roundf(flow_val*100.0)/100.0) == 1.56
         ){flow_val=0;}
     Serial.println(flow_val);
-    delay(10);
+    // delay(10);
   }
 }
 
