@@ -289,7 +289,7 @@ void loop() {
 
 		//1. Cek kalau ganti halaman/state
 		if (CurrentPage != lastPage) {break;}
-   
+
 	}
 
 	// PAGE 1, RUNNING STATE OFF
@@ -299,11 +299,12 @@ void loop() {
 
 		//0. Update bacaan nextion
 		nexLoop(nex_listen_list);
-   peakCount = 0;
+
 
 		//1. Update nilai Oksigen
 		oxygenUpdate();
 		pressureUpdate1();
+		peakCount = 0;
 		readPEEP = true;
 		readIPP = false;
 
@@ -329,6 +330,10 @@ void loop() {
 		//0. Update Bacaan Nextion ---
 		nexLoop(nex_listen_list);
 
+		//2. Update Value PIP dan Oksigen ---
+		pressureUpdate1();
+		oxygenUpdate();
+
 		//1. TIMING INHALE/EXHALE CHECK ---
 		if(readPEEP) {
 			PEEPUpdate();
@@ -344,10 +349,7 @@ void loop() {
 			readIPP = false;
 		}
 
-		//2. Update Value PIP dan Oksigen ---
-		pressureUpdate1();
-		oxygenUpdate();
-
+		
 		Serial.println("SETUPQ : " + String(setupq));
 
 		//3. ROUTINE EXHALE ---
@@ -383,7 +385,7 @@ void loop() {
 			Serial.println("INHALING");
      pressureUpdate1();
      Serial.println("ASd ---- " + String(peakCount));
-     
+
 
 			//0. Cek Fighting
 			if(fighting()) {
