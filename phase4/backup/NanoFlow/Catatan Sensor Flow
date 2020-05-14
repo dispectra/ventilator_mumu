@@ -1,7 +1,0 @@
-5 Mei 2020
-Kendala sensor flow:
-- Offset sensitif banget terhadap konfigurasi elektrikal, kalau kabel digoyang, offset akan berubah.
-- PR: Bikin board untuk sensor flow
-- PR2: Deteksi Spurious di FLOW
-- Perlu kalibrasi ulang volume
---------------------------------------------

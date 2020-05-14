@@ -1,0 +1,7 @@
+Issue List 13 Mei
+1. Motor ga bisa terlalu pelan (malah masuk mode ngelock torsi, kurva speed vs torque)
+2. Motor ga bisa terlalu cepat (torsi ga kuat neken)
+Usulan solusi: Mekanik disesuaikan dengan spek motor
+
+3. Fighting kebaca kadang pasca restart
+Usulan Solusi: Reset Peak Count di mode lain selain mode 2 (Implemented but untested)
