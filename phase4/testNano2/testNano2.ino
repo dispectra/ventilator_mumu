@@ -67,7 +67,7 @@ String lastData = "<0,0,0,0>";
 bool spuriousPrev = false;
 
 unsigned long now, stepTidal, delayInhale, delayExhale, timeInEx;
-double timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay;
+double timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay, timeIPP;
 
 //-- SETUP =========================================================================
 void setup() {
@@ -91,7 +91,7 @@ void setup() {
 
 	pinMode(calManMaju, INPUT_PULLUP);
 	pinMode(calManMundur, INPUT_PULLUP);
-  
+
 	pinMode(pinSpurious, INPUT_PULLUP);
   pinMode(pinPresHold, INPUT_PULLUP);
   pinMode(pinFight, INPUT_PULLUP);
@@ -129,7 +129,8 @@ void loop() {
 		stepTidal = round(cekTidal(Vtidal));
 		timeBreath = (60000 / float(RR)) * 1000;
 		timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
-		timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
+		timeIPP = 10000;
+		timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000 - timeIPP; // dalam microseconds
 		delayInhale = float(timeInhale) / float(stepTidal) / 2; // dalam microseconds
 		delayExhale = 600; // dalam microseconds
 
@@ -165,6 +166,9 @@ void loop() {
 
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
+
+
+			while((micros()-now) < timeInhale + timeIPP) {delayMicroseconds(1);}
 			readIPP(0);
 
 			//2. EXHALE SEG
@@ -185,6 +189,8 @@ void loop() {
 
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
+
+			while((micros()-now) < timeInhale + timeIPP) {delayMicroseconds(1);}
 			readIPP(0);
 
 			//2. EXHALE SEQ
@@ -231,7 +237,7 @@ void loop() {
 //			}
 		}
 
-		Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal));
+		Serial.println("==> TIME EXHALE : " + String(micros()-now - timeInhaleReal - timeIPP));
 
 		Serial.println("TIME TAKEN : " + String(micros() - now));
 		Serial.println("----");
@@ -299,7 +305,7 @@ int Inhale() { // Mandatory Volume Inhale
 
 		if(digitalRead(limitSwitchIn)) {
 			digitalWrite(stepPin, HIGH);
-		} 
+		}
 //		else {break;}
 
 		delayMicroseconds(delayInhale2);
@@ -310,7 +316,7 @@ int Inhale() { // Mandatory Volume Inhale
 
 		if(digitalRead(limitSwitchIn)) {
 			digitalWrite(stepPin, LOW);
-		} 
+		}
 //		else {break;}
 
 		delayMicroseconds(delayInhale2);
@@ -555,7 +561,7 @@ String listeningMega(){
   if(seriesData == lastData) {
     updated = true;
   }
-  
+
 	lastData = seriesData;
 
 	//!! Dummy Data !!
