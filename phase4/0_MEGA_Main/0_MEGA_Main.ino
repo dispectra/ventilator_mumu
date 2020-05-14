@@ -216,6 +216,7 @@ void setup() {
 	Serial.println("==> READY MEGA");
 }
 
+int countStart = 0;
 
 //== MAIN LOOP =============================================
 void loop() {
@@ -307,6 +308,7 @@ void loop() {
 		peakCount = 0;
 		readPEEP = true;
 		readIPP = false;
+    countStart = 0;
 
 		//2. Cek kalau ganti halaman/state
 		if (CurrentPage != 2) {break;}
@@ -334,6 +336,8 @@ void loop() {
 		pressureUpdate1();
 		oxygenUpdate();
 
+    if(pressure_float <=1 && countStart > 0) { setAlarm("01_ON"); mode = 5; break; }// else { setAlarm("01_OFF"); }
+
 		//1. TIMING INHALE/EXHALE CHECK ---
 		if(readPEEP) {
 			PEEPUpdate();
@@ -357,6 +361,7 @@ void loop() {
 			digitalWrite(warningPressure_PIN,HIGH);
 			digitalWrite(warningPEEP_PIN, HIGH);
 			Serial.println("EXHALING");
+      countStart ++;
 
 			if(setupq==2) {
 //				setAlarm("04_OFF");
