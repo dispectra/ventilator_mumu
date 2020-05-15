@@ -253,7 +253,7 @@ void readIPPQ(){readIPP = true;}
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = 1.5 *(90.1479*sqrt(flow_rawq)-5011.9318+35.80);
+  float calc = 3/2.3 * (90.1479*sqrt(flow_rawq)-5011.9318+35.80);
 
   return calc;
 }

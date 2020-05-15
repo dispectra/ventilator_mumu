@@ -129,7 +129,7 @@ void loop() {
 		stepTidal = round(cekTidal(Vtidal));
 		timeBreath = (60000 / float(RR)) * 1000;
 		timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
-		timeIPP = 10000;
+		timeIPP = 100000;
 		timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000 - timeIPP; // dalam microseconds
 		delayInhale = float(timeInhale) / float(stepTidal) / 2; // dalam microseconds
 		delayExhale = 600; // dalam microseconds

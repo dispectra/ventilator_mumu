@@ -4,6 +4,9 @@
  * Nano), and communicate with HMI (Nextion).
  */
 
+/* low pressure exception:
+	1. Saat exhale dan sesaat setelah exhale (krn bisa jadi spurious)
+
 //== LIBRARIES =============================================
 #include <SoftwareSerial.h>
 #include <Nextion.h>
@@ -338,9 +341,9 @@ void loop() {
 		pressureUpdate1();
 		oxygenUpdate();
 
-    if(pressure_float <=1 
-      && countStart > 0 
-      && !exhaleStage 
+    if(pressure_float <=1
+      && countStart > 0
+      && !exhaleStage
       && countInhale >= 10) { setAlarm("01_ON"); mode = 5; break; }// else { setAlarm("01_OFF"); }
 
 		//1. TIMING INHALE/EXHALE CHECK ---
