@@ -295,6 +295,7 @@ void loop() {
 
 	// PAGE 1, RUNNING STATE OFF
 	while (mode == 1) {
+		zeroPresSensor();
     if (digitalRead(ButtonResetAlarm_PIN) == LOW) {setAlarm("99_LOW");}
 		// zeroPresSensor();
 
@@ -353,7 +354,7 @@ void loop() {
 			readIPP = false;
 		}
 
-		
+
 		Serial.println("SETUPQ : " + String(setupq));
 
 		//3. ROUTINE EXHALE ---
@@ -374,6 +375,11 @@ void loop() {
 					setAlarm("06_OFF");
 				}
 			} else if(setupq==1) {
+        if(pressure_float < PEEP_LIMIT) {
+          setAlarm("06_ON");
+        } else {
+          setAlarm("06_OFF");
+        }
 				// Cek Spurious Trigger dari Arduino Sensor
 				if (digitalRead(pinSpurious)== LOW) {
 					setupq = 2;
@@ -387,6 +393,8 @@ void loop() {
 		//4. ROUTINE INHALE ---
 		else {
 //			setAlarm("04_OFF");
+			// digitalWrite(warningPEEP_PIN, HIGH);
+			setAlarm("06_OFF");
 			Serial.println("INHALING");
      pressureUpdate1();
      Serial.println("ASd ---- " + String(peakCount));
