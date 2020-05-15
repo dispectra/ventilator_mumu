@@ -79,6 +79,7 @@ void loop() {
         || abs(roundf(flow_val*100.0)/100.0) == 3.24
         || abs(roundf(flow_val*100.0)/100.0) == 0.81
         || abs(roundf(flow_val*100.0)/100.0) == 4.06
+        || abs(roundf(flow_val*100.0)/100.0) == 1.17
         || abs(roundf(flow_val*100.0)/100.0) == 2.51
         || abs(roundf(flow_val*100.0)/100.0) == 4.87
         || abs(roundf(flow_val*100.0)/100.0) == 5.68
@@ -101,6 +102,7 @@ void loop() {
 
       // indicate INHALE
       exhaleStage = false;
+      Serial.println("---------------------------------------------");
 
       // reset time and var
       nowq = micros();
@@ -123,9 +125,9 @@ void loop() {
         }
         flag_delayFlow = false;}
       digitalWrite(pinVolWarn, HIGH);
-      Serial.println(flow_val);
+//      Serial.println(flow_val);
       if(lastState == 0){
-        Serial.println("EXHALE STAGE");
+//        Serial.println("EXHALE STAGE");
         lastState = 1;
       }
 
@@ -142,7 +144,7 @@ void loop() {
     else {
       flag_delayFlow = true;
       if(lastState == 1){
-        Serial.println("INHALE STAGE");
+//        Serial.println("INHALE STAGE");/
         lastState = 0;
       }
 
@@ -159,18 +161,19 @@ void loop() {
         digitalWrite(pinVolWarn, HIGH);
         warned = true;
       }
-
-      // KEPERLUAN AMBIL DATA --------------------------------------
-      // Serial.print(flow_raw);
-      // Serial.print("\t");
-      // Serial.print(flow_val);
-      // Serial.print("\t");
-      // Serial.println(vol_acc);
-
-      Serial.println("====> TIME: " + String(dt));
-      Serial.println("Flow: " + String(flow_val));
-      Serial.println("VOL: " + String(vol_acc));
+//
+//      Serial.println("====> TIME: " + String(dt));
+//      Serial.println("Flow: " + String(flow_val));
+//      Serial.println("VOL: " + String(vol_acc));
     }
+
+         // KEPERLUAN AMBIL DATA --------------------------------------
+       Serial.print(flow_raw);
+       Serial.print("\t");
+       Serial.print(flow_val);
+       Serial.print("\t");
+       Serial.println(vol_acc);
+    
   } else { //OFF Condition
     readPEEP = true;
     readIPP = false;
@@ -250,7 +253,7 @@ void readIPPQ(){readIPP = true;}
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = 1.2* (90.1479*sqrt(flow_rawq)-5011.9318+35.80);
+  float calc = 1.5 *(90.1479*sqrt(flow_rawq)-5011.9318+35.80);
 
   return calc;
 }
@@ -259,7 +262,7 @@ float calcFlow(float flow_rawq){
 // !!HOMEWORK!!
 bool spuriousDetect(){
   bool spurious = false;
-   if(flow_val > 8){
+   if(flow_val > 4.5){
      spurious = true;
    }
   return spurious;

@@ -33,7 +33,10 @@ void loop() {
 ////   Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
 //  }
 
-  Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
+  int flow_read = ads.readADC_Differential_0_1();
+  Serial.print(flow_read);
+  Serial.print("\t");
+  Serial.println(calcFlow(flow_read)+offset);
   delay(10);
 }
 
@@ -84,7 +87,7 @@ int countOccurances(float val[], float q){
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = (90.1479*sqrt(flow_rawq)-5011.9318+35.80+500);
+  float calc = 1.2 * (90.1479*sqrt(flow_rawq)-5011.9318+35.80+500);
 
   return calc;
 }

@@ -217,6 +217,7 @@ void setup() {
 }
 
 int countStart = 0;
+int countInhale = 0;
 
 //== MAIN LOOP =============================================
 void loop() {
@@ -248,7 +249,7 @@ void loop() {
 		update2Nano();
 		trigNePage(1);
     peakCount = 0;
-		Serial.println("WOKE"); Serial.flush();
+   Serial.println("------------------ mode5");
 //    delay(100000);
 	} else {
 		if(CurrentPage == 2) { // Untuk page 1
@@ -263,13 +264,13 @@ void loop() {
 		}
 	}
 
-	Serial.println("CURRENTPAGE" + String(CurrentPage));
-	Serial.println("MODE" + String(mode));
+//	Serial.println("CURRENTPAGE" + String(CurrentPage));
+//	Serial.println("MODE" + String(mode));
 
 	// mode utk routine stuck setelah alarm
 	while (mode == 5) {
 		setupq = 0;
-		Serial.println("------------------ mode5"); //delay(10000);
+	 //delay(10000);
 
 		if (digitalRead(ButtonResetAlarm_PIN) == LOW) {
 			Serial.println("Reset system button pressed"); Serial.flush(); //delay(10000);
@@ -337,7 +338,10 @@ void loop() {
 		pressureUpdate1();
 		oxygenUpdate();
 
-    if(pressure_float <=1 && countStart > 0) { setAlarm("01_ON"); mode = 5; break; }// else { setAlarm("01_OFF"); }
+    if(pressure_float <=1 
+      && countStart > 0 
+      && !exhaleStage 
+      && countInhale >= 10) { setAlarm("01_ON"); mode = 5; break; }// else { setAlarm("01_OFF"); }
 
 		//1. TIMING INHALE/EXHALE CHECK ---
 		if(readPEEP) {
@@ -345,6 +349,7 @@ void loop() {
 			pip_value = 0;
       peakq = 0;
 			peakCount = 0;
+      countInhale = 0;
 			readPEEP = false;
 			exhaleStage = false;
 		}
@@ -392,12 +397,13 @@ void loop() {
 
 		//4. ROUTINE INHALE ---
 		else {
+      countInhale++;
 //			setAlarm("04_OFF");
 			// digitalWrite(warningPEEP_PIN, HIGH);
 			setAlarm("06_OFF");
-			Serial.println("INHALING");
+//			Serial.println("INHALING");
      pressureUpdate1();
-     Serial.println("ASd ---- " + String(peakCount));
+//     Serial.println("ASd ---- " + String(peakCount) + String(peakq));
 
 
 			//0. Cek Fighting
@@ -767,7 +773,7 @@ double PEEP_raw, PEEP_float;
 
 void pressureUpdate1() {
 	pressure_float = calcPres(ads.readADC_SingleEnded(2)) + offset;
-	Serial.println("Pres: " + String(pressure_float));
+//	Serial.println("Pres: " + String(pressure_float));
 	pressure_int8 = map(int(pressure_float), -10, 20, 0, 255);
 
   if (pip_value < pressure_float) {
@@ -777,7 +783,7 @@ void pressureUpdate1() {
 	if(peakq < pressure_float) {
 		peakq = pressure_float;
 	} else {
-		if(peakq - pressure_float >= 5) {
+		if(peakq - pressure_float >= 2.5) {
 			peakCount++;
 			peakq = 0;
 		}
@@ -890,7 +896,7 @@ void setAlarm(String key) {   // Key example: 01_ON   ;   09_OFF
 	digitalWrite(MEGA_DO_6, !(alarms[6]));
 	digitalWrite(MEGA_DO_7, !(alarms[7]));
 
-	Serial.println(msg);
+//	Serial.println(msg);
 }
 
 //-- Servo to set Oxygen
