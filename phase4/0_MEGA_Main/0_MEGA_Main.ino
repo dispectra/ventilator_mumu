@@ -6,6 +6,7 @@
 
 /* low pressure exception:
 	1. Saat exhale dan sesaat setelah exhale (krn bisa jadi spurious)
+*/
 
 //== LIBRARIES =============================================
 #include <SoftwareSerial.h>
@@ -57,6 +58,7 @@ uint32_t runningState = 0;
 uint32_t IE = 20;
 uint32_t RR = 10;
 uint32_t PEEP_LIMIT = 5;
+int LOW_PIP_LIMIT = 5;
 uint32_t Vti = 300;
 uint32_t Ox = 20;
 
@@ -70,7 +72,7 @@ int lastPage;
 int mode = 0;
 
 // new variables
-int PIP_LIMIT = 20;
+int PIP_LIMIT = 35;
 int peakCount = 0;
 
 #define ButtonResetAlarm_PIN 36
@@ -341,7 +343,7 @@ void loop() {
 		pressureUpdate1();
 		oxygenUpdate();
 
-    if(pressure_float <=1
+    if(pressure_float <= LOW_PIP_LIMIT
       && countStart > 0
       && !exhaleStage
       && countInhale >= 10) { setAlarm("01_ON"); mode = 5; break; }// else { setAlarm("01_OFF"); }
@@ -641,18 +643,17 @@ void b18PushCallback(void *ptr) {
 	//default di 20 max 40
 	//asumsi variabel = HPL
 	PIP_LIMIT++;
-	if(PIP_LIMIT>=40) {PIP_LIMIT=40;}
+	if(PIP_LIMIT>=45) {PIP_LIMIT=45;}
 	dbSerialPrintln("PIP" + String(PIP_LIMIT));
 }
 
 void b19PushCallback(void *ptr) {
 	//Low pressure limit --
-	//default di min 20 max 35
+	//default di min 1 max 10
 	//asumsi variabel = LPL
-	/*
-	   LPL--;
-	   if(LPL<=20){LPL=20;}
-	 */
+   LOW_PIP_LIMIT--;
+   if(LOW_PIP_LIMIT<=1){LOW_PIP_LIMIT=1;}
+
 	dbSerialPrintln("LPL-");
 }
 
@@ -660,10 +661,10 @@ void b20PushCallback(void *ptr) {
 	//Low pressure limit ++
 	//default di min 20 max 35
 	//asumsi variabel = LPL
-	/*
-	   LPL++;
-	   if(LPL>=35){LPL=35;}
-	 */
+ 
+   LOW_PIP_LIMIT++;
+   if(LOW_PIP_LIMIT>=10){LOW_PIP_LIMIT=10;}
+
 	dbSerialPrintln("LPL+");
 }
 

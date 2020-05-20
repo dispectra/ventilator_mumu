@@ -4,19 +4,17 @@
 
 Adafruit_ADS1115 ads;
 
+float offset = 0;
+int buffsize = 50;
+unsigned long now;
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
 //  pinMode(6, INPUT_PULLUP);
   ads.begin();
-  ads.setGain(GAIN_SIXTEEN);
   zeroFlowSensor();
 }
-
-float offset;
-int buffsize = 5;
-
-unsigned long now;
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -33,10 +31,21 @@ void loop() {
 ////   Serial.println(calcFlow(ads.readADC_Differential_0_1())+offset);
 //  }
 
-  int flow_read = ads.readADC_Differential_0_1();
-  Serial.print(flow_read);
-  Serial.print("\t");
-  Serial.println(calcFlow(flow_read)+offset);
+  int flow_read = ads.readADC_SingleEnded(0);
+//  Serial.print(flow_read);
+//  Serial.print("\t");
+    //0b. Remove Noise Values
+  double flow_val = calcFlow(flow_read)+offset;
+    if(abs(flow_val) <= 1
+        || abs(roundf(flow_val*100.0)/100.0) == 0.11
+        || abs(roundf(flow_val*100.0)/100.0) == 0.22
+        || abs(roundf(flow_val*100.0)/100.0) == 0.32
+        || abs(roundf(flow_val*100.0)/100.0) == 0.43
+        || abs(roundf(flow_val*100.0)/100.0) == 0.54
+        || abs(roundf(flow_val*100.0)/100.0) == 0.65
+        || abs(roundf(flow_val*100.0)/100.0) == 0.75
+        ){flow_val=0;}
+  Serial.println(flow_val);
   delay(10);
 }
 
@@ -52,7 +61,7 @@ void zeroFlowSensor(){
   
   //1. Ambil x data
   for(int i=0; i<buffsize; i++){
-    val[i] = calcFlow(ads.readADC_Differential_0_1())+offset;
+    val[i] = calcFlow(ads.readADC_SingleEnded(0))+offset;
     Serial.println(val[i]);
   }
 
@@ -87,7 +96,7 @@ int countOccurances(float val[], float q){
 
 //- Calc Flow from Callibration
 float calcFlow(float flow_rawq){
-  float calc = 1.2 * (90.1479*sqrt(flow_rawq)-5011.9318+35.80+500);
+  float calc = (25.188*sqrt(flow_rawq)-2915.7);
 
   return calc;
 }

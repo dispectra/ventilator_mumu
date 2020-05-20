@@ -28,10 +28,10 @@
 // volTidal = Volume Tidal (cc)
 // IRat dan ERat = IERatio ( I : E )
 // RR = Respiration Rate (x per minute)
-float volTidal = 450;
+float volTidal = 600;
 int IRat = 1;
-float ERat = 2.5;
-int RR = 14;
+float ERat = 2;
+int RR = 20;
 
 //-- GLOBAL VARIABLEs ===============================================================
 unsigned long stepTidal, delayInhale, delayExhale, timeInEx;

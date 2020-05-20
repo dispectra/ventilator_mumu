@@ -45,7 +45,7 @@ void setup() {
   SerialM.begin(57600);
 
   ads.begin();
-  ads.setGain(GAIN_SIXTEEN);
+//  ads.setGain(GAIN_SIXTEEN);
 
   pinMode(pinPEEP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(pinPEEP), readPEEPQ, FALLING);
@@ -71,23 +71,18 @@ void loop() {
   //1. Check State
   if(runningState != 0){
     //0a. Read Flow Value
-    flow_raw = ads.readADC_Differential_0_1();
+    flow_raw = ads.readADC_SingleEnded(0);
     flow_val =  calcFlow(flow_raw) + offset;
 
     //0b. Remove Noise Values
     if(abs(flow_val) <= 1
-        || abs(roundf(flow_val*100.0)/100.0) == 3.24
-        || abs(roundf(flow_val*100.0)/100.0) == 0.81
-        || abs(roundf(flow_val*100.0)/100.0) == 4.06
-        || abs(roundf(flow_val*100.0)/100.0) == 1.17
-        || abs(roundf(flow_val*100.0)/100.0) == 2.51
-        || abs(roundf(flow_val*100.0)/100.0) == 4.87
-        || abs(roundf(flow_val*100.0)/100.0) == 5.68
-        || abs(roundf(flow_val*100.0)/100.0) == 2.34
-        || abs(roundf(flow_val*100.0)/100.0) == 1.62
-        || abs(roundf(flow_val*100.0)/100.0) == 1.63
-        || abs(roundf(flow_val*100.0)/100.0) == 1.68
-        || abs(roundf(flow_val*100.0)/100.0) == 1.56
+        || abs(roundf(flow_val*100.0)/100.0) == 0.11
+        || abs(roundf(flow_val*100.0)/100.0) == 0.22
+        || abs(roundf(flow_val*100.0)/100.0) == 0.32
+        || abs(roundf(flow_val*100.0)/100.0) == 0.43
+        || abs(roundf(flow_val*100.0)/100.0) == 0.54
+        || abs(roundf(flow_val*100.0)/100.0) == 0.65
+        || abs(roundf(flow_val*100.0)/100.0) == 0.75
         ){flow_val=0;}
 
   ///  Serial.println(flow_val);
@@ -120,7 +115,7 @@ void loop() {
       if (flag_delayFlow) {
         unsigned long nowa = millis();
         while(millis()-nowa < 500) {
-          flow_raw = ads.readADC_Differential_0_1();
+          flow_raw = ads.readADC_SingleEnded(0);
           flow_val = calcFlow(flow_raw) + offset;
         }
         flag_delayFlow = false;}
@@ -181,7 +176,7 @@ void loop() {
     digitalWrite(pinSpur, HIGH);
 
   //0a. Read Flow Value
-    flow_raw = ads.readADC_Differential_0_1();
+    flow_raw = ads.readADC_SingleEnded(0);
     flow_val = calcFlow(flow_raw) + offset;
 
     //0b. Remove Noise Values
@@ -215,7 +210,7 @@ void zeroFlowSensor(){
 
   //1. Ambil x data
   for(int i=0; i<buffsize; i++){
-    val[i] = calcFlow(ads.readADC_Differential_0_1())+offset;
+    val[i] = calcFlow(ads.readADC_SingleEnded(0))+offset;
   }
 
   sortArray(val, buffsize);
