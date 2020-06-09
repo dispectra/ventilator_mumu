@@ -69,13 +69,17 @@ bool spuriousPrev = false;
 unsigned long now, stepTidal, delayInhale, delayExhale, timeInEx;
 double timeInhale, timeExhale, IERatio, timeBreath, slopeFactor, initDelay, timeIPP;
 
+float msq = 0.25; // x/4
+float msq1 = 0.25;
+double offsetTimeBreath = 0;
+
 //-- SETUP =========================================================================
 void setup() {
 	Serial.begin(115200);
 	SerialM.begin(57600);
 
 	slopeFactor = 0.35;
-	initDelay = 1200;
+	initDelay = 600/  (msq1);
 
 	//////////// BREATHING PART //////////////////
 	pinMode(enaPin, OUTPUT);
@@ -126,14 +130,19 @@ void loop() {
 		readPEEP(1);
 
 		// 1. UPDATE VARIABLES
-		stepTidal = round(cekTidal(Vtidal));
-		timeBreath = (60000 / float(RR)) * 1000;
-		timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
-		timeIPP = 100000;
-		timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000 - timeIPP; // dalam microseconds
+		stepTidal = round(cekTidal(Vtidal, ERat, RR))* msq;
+//    if(Vt/idal <= 420){
+//    // NUJUM
+//    offsetTimeBreath = -0.027798107*RR-0.001000943*Vtidal-0.179555106*ERat+1.248937329;
+//    } /
+		timeBreath = (60000 / float(RR)) * 1000;// - offsetTimeBreath* 500000;
+		timeIPP = 00000;
+		timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000 + offsetTimeBreath* ((1000000/(ERat+1))-300000); // dalam microseconds
+		timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000 ; // dalam microseconds
 		delayInhale = float(timeInhale) / float(stepTidal) / 2; // dalam microseconds
-		delayExhale = 600; // dalam microseconds
+		delayExhale = 300 / (msq1); // dalam microseconds
 
+    unsigned long timeInhaleq = timeInhale + timeIPP;
 		Serial.println("==================");
 		Serial.println("Vol Tidal = " + String(Vtidal));
 		Serial.println("Step Tidal = " + String(stepTidal));
@@ -143,6 +152,7 @@ void loop() {
 		Serial.println("DELAY Inhale = " + String(delayInhale));
 		Serial.println("DELAY Exhale = " + String(delayExhale));
 		Serial.println("----");
+    Serial.println(String(offsetTimeBreath* 1000000));
 		Serial.println("WAKTU BREATH = " + String(timeBreath));
 		Serial.println("WAKTU IDEAL Inhale = " + String(timeInhale));
 		Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
@@ -162,13 +172,13 @@ void loop() {
 
 			//1. Inspiratory Pause Period
 			readIPP(1);
-			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
+//			while((micros()-now) < timeInhale) {delayMicroseconds(1);}
 
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
 
 
-			while((micros()-now) < timeInhale + timeIPP) {delayMicroseconds(1);}
+			while((micros()-now) < timeInhale+timeIPP) {delayMicroseconds(1);}
 			readIPP(0);
 
 			//2. EXHALE SEG
@@ -190,7 +200,7 @@ void loop() {
 			timeInhaleReal = micros()-now;
 			Serial.println("==> TIME INHALE : " + String(timeInhaleReal));
 
-			while((micros()-now) < timeInhale + timeIPP) {delayMicroseconds(1);}
+			while((micros()-now) < timeInhaleq) {delayMicroseconds(1);}
 			readIPP(0);
 
 			//2. EXHALE SEQ
@@ -448,12 +458,68 @@ void Callibrate() {
 }
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
-float cekTidal(float vol_Tidal){
-	float lookup_vol[] = {165, 229, 299, 368, 435, 492, 548, 586, 608, 615};
-	float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900};
+float cekTidal(float vol_Tidal, float Eratq, int RR){
+//  float lookup_vol[];
+//  float lookup_step[];
+//  int arraySize;
+////  
 
+//  // NUJUM
+//
+//  if(Eratq < 1.8){
+//    if(vol_Tidal < 350){
+//      vol_Tidal +=10;
+//    }
+//  } else if (Eratq == 2){
+//    if(vol_Tidal>=590 && RR>=14){
+//      vol_Tidal +=40;
+//      if(RR>=16){vol_Tidal+=10;};
+//      
+//    }
+//  }
+//  
+//  if(RR>=17){
+//    if(vol_Tidal < 350){
+//      vol_Tidal += 10;
+//    } else {
+//      vol_Tidal += 30;
+//    }
+//    if(vol_Tidal > 550){
+//      vol_Tidal += 20;  
+//    }
+//  };
+//  
+
+  //Eratq = 2
+	float lookup_vol[] = {288, 295, 308, 340, 400, 460, 510, 560, 600, 640}; //microstep 1/4
+	float lookup_step[] = {774, 788, 803, 849, 911, 977, 1040, 1097, 1134, 1176}; //konfigurasi plus
+  int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);
+  
+////  
+//float lookup_vol[] = {229, 270, 312, 355, 395, 485, 535, 583,/
+//float lookup_vol[] = {255, 314, 344, 390, 454, 500, 567, 624}; //microstep 1/4
+//  float lookup_step[] = {680, 746, 782, 848, 908, 976, 1039, 1107};
+//  if (Eratq == 1){
+//    Serial.println("HALOHALO");
+//    float lookup_volq[] = {183, 278, 324, 381, 450, 512, 577, 633}; //microstep 1/4
+//    float lookup_stepq[] = {730, 789, 845, 903, 960, 1019, 1078, 1138};
+//    for(int i= 0; i < arraySize; i++){
+//      lookup_vol[i] = lookup_volq[i];
+//      lookup_step[i] = lookup_stepq[i];
+//    }
+//  }
+
+//  float lookup_vol[] = {267, 294, 362, 400, 473, 487, 506, 600, 628}; //microstep 1/4
+//  float lookup_step[] = {704, 742, 791, 848, 936, 971, 979, 1107, 1150}; //konfigurasi plus
+
+//  float lookup_vol[] = {147, 220, 255, 315, 441, 500, 600}; //microstep 1/4
+//  float lookup_step[] = {551, 624, 694, 707, 832, 936, 1150}; //flat (penekan lama)
+
+//  float lookup_vol[] = {165, 229, 299, 368, 435, 492, 548, 586, 608, 615};
+//  float lookup_step[] = {450, 500, 550, 600, 650, 700, 750, 800, 850, 900};
+  
 	float stepTidal = 0;
-	int arraySize = sizeof(lookup_vol) / sizeof(lookup_vol[0]);
+	
 
 	// Extrapolasi Bawah
 	if(vol_Tidal < cariMin(lookup_vol, arraySize)) {

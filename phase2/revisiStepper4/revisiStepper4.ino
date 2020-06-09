@@ -50,7 +50,7 @@ void setup() {
   timeInhale = (60000 / float(RR)) * (float(IRat) / float(IRat + ERat)) * 1000; // dalam microseconds
   timeExhale = (60000 / float(RR)) * (float(ERat) / float(IRat + ERat)) * 1000; // dalam microseconds
   delayInhale = float(timeInhale) / float(stepTidal) / 2; //endDelay; // dalam microseconds
-  delayExhale = 600; //delayInhale; // dalam microseconds
+  delayExhale = 1000; //delayInhale; // dalam microseconds
   
 //  timeInEx = stepTidal * delayInhale/; 
 
@@ -240,14 +240,15 @@ void Exhale() {
     if(i>(1-slopeFactor)*stepTidal){
       delayExhale2 += (initDelay-delayExhale) / (slopeFactor*stepTidal);
     }
-    if(digitalRead(limitSwitchEx)){
-      digitalWrite(stepPin, HIGH);
-    }
+//    if(digitalRead(limitSwitchEx)){
+    digitalWrite(stepPin, HIGH);
+//    }
+
     delayMicroseconds(delayExhale2);
     
-    if(digitalRead(limitSwitchEx)){
-      digitalWrite(stepPin, LOW);
-    }
+//    if(digitalRead(limitSwitchEx)){
+    digitalWrite(stepPin, LOW);
+//    }
 
     delayMicroseconds(delayExhale2);
   }
