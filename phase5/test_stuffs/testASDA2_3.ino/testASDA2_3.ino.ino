@@ -49,11 +49,12 @@ float initDelay = 25;
 unsigned long p_vol, p_RR;
 float p_IE;
 
-int num_buf = 4;
-String bufferq[4];
-String lastData = "<0,0,0,0>";
+int num_buf = 5;
+String bufferq[5];
+String lastData = "<0,0,0,0,0>";
 bool updated = false;
-bool p_ntab = false;
+int p_ntab = 0;
+int p_mode = 0;
 
 //-- SETUP ==========================================================================
 void setup() {
@@ -76,7 +77,9 @@ void setup() {
 
 //-- LOOP ============================================================================
 void loop() {
-  if(digitalRead(Bt4) == LOW){
+  updateAllGlobal();
+  
+  if(p_mode!=0){
 //    digitalWrite(2, HIGH);
 //    Serial.println("BREATHING ====================="); Serial.flush();
     if (stepTidal > 0) {
@@ -104,40 +107,37 @@ void loop() {
       //throw error message
  
     }
-  }else if(digitalRead(Bt3) == LOW) {
-    while(digitalRead(Bt3) == LOW){
-      cekNewParam();
-    }
-    updateParam(p_vol, p_RR, p_IE);
-  }else if(digitalRead(Bt1) == LOW){
-    digitalWrite(DIR, dirInhale);
-    Serial.println("MAJU!");
-//    if(stateq != 1){
-//      stepq = 0;
-//      stateq = 1;
-//    }
-    while(digitalRead(Bt1) == LOW){
-      digitalWrite(PUL, HIGH);
-      delayMicroseconds(delayq);
-      digitalWrite(PUL, LOW);
-      delayMicroseconds(delayq);
-//      stepq +=1;
-//      Serial.println("Step = " + String(stepq));
-    }
-  } else if(digitalRead(Bt2) == LOW){
-    digitalWrite(DIR, !dirInhale);
-    Serial.println("MUNDUR!");
-//    if(stateq != 0){
-//      stepq = 0;
-//      stateq = 0;
-//    }
-    while(digitalRead(Bt2) == LOW){
-      digitalWrite(PUL, HIGH);
-      delayMicroseconds(delayq);
-      digitalWrite(PUL, LOW);
-      delayMicroseconds(delayq);
-//      stepq +=1;
-//      Serial.println("Step = " + String(stepq));
+  } else {
+    if(digitalRead(Bt1) == LOW){
+      digitalWrite(DIR, dirInhale);
+      Serial.println("MAJU!");
+  //    if(stateq != 1){
+  //      stepq = 0;
+  //      stateq = 1;
+  //    }
+      while(digitalRead(Bt1) == LOW){
+        digitalWrite(PUL, HIGH);
+        delayMicroseconds(delayq);
+        digitalWrite(PUL, LOW);
+        delayMicroseconds(delayq);
+  //      stepq +=1;
+  //      Serial.println("Step = " + String(stepq));
+      }
+    } else if(digitalRead(Bt2) == LOW){
+      digitalWrite(DIR, !dirInhale);
+      Serial.println("MUNDUR!");
+  //    if(stateq != 0){
+  //      stepq = 0;
+  //      stateq = 0;
+  //    }
+      while(digitalRead(Bt2) == LOW){
+        digitalWrite(PUL, HIGH);
+        delayMicroseconds(delayq);
+        digitalWrite(PUL, LOW);
+        delayMicroseconds(delayq);
+  //      stepq +=1;
+  //      Serial.println("Step = " + String(stepq));
+      }
     }
   }
 }
@@ -164,9 +164,16 @@ void cekNewParam(){
     p_RR = bufferq[1].toInt();
     p_IE = bufferq[2].toFloat();
     p_ntab = bufferq[3].toInt();
+    p_mode = bufferq[4].toInt();
 
+    updateParam(p_vol, p_RR, p_IE);
+    
     updated = true;
   }
+}
+
+void updateAllGlobal(){
+  cekNewParam();
 }
 
 String listeningMega(){
@@ -174,22 +181,16 @@ String listeningMega(){
   String seriesData = "";
 
 //  Serial.println(F("Waiting data from Mega...")); Serial.flush();
-  while (!quit) {
+//  while (!quit) {
     if (Serial.available() > 0) {
       updated = false;
-      char x = Serial.read();
-      if (x == '>') {
-        seriesData += x;
-        quit = true;
-      } else {
-        if (x == '<') {seriesData = "";}
-        seriesData += x;
-      }
+      seriesData = Serial.readString();
+      quit = true;
     } else {
       seriesData = lastData;
       quit = true;
     }
-  }
+//  }
 
   if(seriesData == lastData) {
     updated = true;
@@ -216,24 +217,34 @@ void updateParam(float vol, int RRq, float ERatq){
   timeInhale = (60000 / float(RRq)) * (float(IRat) / float(IRat + ERatq)) * 1000 - 500; // dalam microseconds
 
   float offsetInhaleq= 0;
-//  if(vol == 300){
-//    offsetInhaleq = -0.012412439*RRq-0.157731744*ERatq+0.296506979;
-//  }
-//  else if(vol==400){
-//    offsetInhaleq = 0.134687073-0.00701688*RRq-0.084229897*ERatq;
-//  } else if(vol==500){
-//    offsetInhaleq = -0.009570213*RRq-0.169627944*ERatq+0.348851729;
+
+//-0.018480414  0 -0.125672596  0.520717433
+//-0.017318122  0 -0.130474105  0.449587999
+//-0.011070931  0 -0.14822688 0.367918135
+//-0.007851635  0 -0.174476163  0.363243903
+
+  
+  if(p_ntab == 3){
+    offsetInhaleq = -0.018480414*RRq-0.125672596*ERatq+0.520717433;
+  }
+  else if(p_ntab==4){
+    offsetInhaleq = -0.017318122*RRq-0.130474105*ERatq+0.449587999;
+  } else if(p_ntab==5){
+    offsetInhaleq = -0.011070931*RRq-0.14822688*ERatq+0.367918135;
 //    offsetInhaleq = offsetInhaleq*0.5;
-//  }else if(vol==600){
-//    offsetInhaleq = -0.011453781*RRq-0.189504356*ERatq+0.38605728;
+  }else if(p_ntab==6){
+    offsetInhaleq = -0.007851635*RRq-0.174476163*ERatq+0.363243903;
 //    offsetInhaleq = offsetInhaleq*0.7;
-//  }
-//  Serial.println(offsetInhaleq);
+  }
+  Serial.println(offsetInhaleq);
 //  Serial.println(offsetVolq);
-//  timeInhale += offsetInhaleq*1000000/2;
+
+  timeInhale += offsetInhaleq*1000000/2;
+  
   timeExhale = (60000 / float(RRq)) * (float(ERatq) / float(IRat + ERatq)) * 1000; // dalam microseconds
   delayInhale = float(timeInhale) / float(stepTidal) / 2; //endDelay; // dalam microseconds
   delayExhale = 20; //delayInhale; // dalam microseconds
+  
 // if(vol == 650){
 //    delayInhale = delayInhale/0.69*0.5;
 //  }
@@ -251,7 +262,7 @@ void updateParam(float vol, int RRq, float ERatq){
   Serial.println("DELAY Exhale = " + String(delayExhale));
   Serial.println("----");
   Serial.println("WAKTU BREATH = " + String(timeBreath));
-  Serial.println("WAKTU IDEAL Inhale = " + String(timeInhale-offsetInhaleq*1000000));
+  Serial.println("WAKTU IDEAL Inhale = " + String(timeInhale));
   Serial.println("WAKTU IDEAL Exhale = " + String(timeExhale));
   Serial.println("----");
   
@@ -259,8 +270,8 @@ void updateParam(float vol, int RRq, float ERatq){
 
 //-- Lookup Table Volume Tidal vs Step yang diperlukan ================================
 float cekTidal(float vol_Tidal){
-  float lookup_vol[] =  { 235,  250,   279,  308,  322,  352,  382,  410,  442,  476,  510,  546,  581,  599,  616,  646,  673};
-  float lookup_step[] = {3500, 3600,  3850, 3900, 4000, 4200, 4400, 4600, 4800, 5000, 5200, 5400, 5600, 5700, 5800, 6000, 6200};
+  float lookup_vol[] =  { 235,  250,   279,  308,  322,  352,  382,  410,  442,  476,  484,  494,  526,  560,  579,  590,  622,  647};
+  float lookup_step[] = {3500, 3600,  3850, 3900, 4000, 4200, 4400, 4600, 4800, 5000, 5100, 5200, 5400, 5600, 5700, 5800, 6000, 6200};
 
 //  float lookup_vol[] = {  216,  261,  295,  311,  327,  347,  364,  380,  394,  402,  411,  427,  444,  462,  495,  510,  544,  561,  595,  613,  630,  659,  672};
 //  float lookup_step[] = {3500, 3800, 4000, 4100, 4200, 4300, 4400, 4500, 4600, 4650, 4700, 4800, 4900, 5000, 5200, 5300, 5500, 5600, 5800, 5900, 6000, 6200, 6300};
@@ -296,8 +307,8 @@ float cekTidal(float vol_Tidal){
       }
     }
   }
-  return stepTidal;
-//  return vol_Tidal*10;
+//  return stepTidal;
+  return vol_Tidal*10;
 }
 
 //-- fungsi tambahan lookup table
@@ -328,19 +339,19 @@ void Inhale() {
   // 0. Hitung Waktu
 //  unsigned long now = micros();
 //  float delayInhale2 = delayInhale-offsetq;
-  bool ntab = true;
+  bool ntab = false;
   float axq;
   float delayInhale2 = delayInhale-offsetq;
   
-  if(!p_ntab){
-    ntab = false;
-    Serial.println("NotNtab");Serial.flush();
-  } else {
-    delayInhale2 = 0.7*delayInhale;
-    axq = 1/(0.4*stepTidal-1) * (1.5)*delayInhale; //1.38
-    Serial.println("Ntab");Serial.flush();
-    Serial.println(axq);
-  }
+//  if(!p_ntab){
+//    ntab = false;
+//    Serial.println("NotNtab");Serial.flush();
+//  } else {
+//    delayInhale2 = 0.7*delayInhale;
+//    axq = 1/(0.4*stepTidal-1) * (1.5)*delayInhale; //1.38
+//    Serial.println("Ntab");Serial.flush();
+//    Serial.println(axq);
+//  }
   
 //  if(ntab){}/
   
