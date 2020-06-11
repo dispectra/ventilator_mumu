@@ -1,0 +1,11 @@
+Rotate Display
+https://www.stuffaboutcode.com/2017/05/raspberry-pi-touchscreen-portrait.html
+https://www.raspberrypi.org/forums/viewtopic.php?t=257677
+
+ADS1115 Python
+v1 https://circuitpython.readthedocs.io/projects/ads1x15/en/latest/
+v2 https://learn.adafruit.com/raspberry-pi-analog-to-digital-converters/ads1015-slash-ads1115
+
+Paho MQTT Python
+https://pypi.org/project/paho-mqtt/
+http://www.steves-internet-guide.com/publishing-messages-mqtt-client/
