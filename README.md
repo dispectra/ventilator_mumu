@@ -14,3 +14,7 @@ Low Cost Ventilator - ITB
 
 ## Phase 4:
 - Pengembangan SIMV Lanjutan
+
+## Phase 6:
+- Backup setelah uji pre-klinis
+- Persiapan pengembangan lanjutan per 25 Mei 2021

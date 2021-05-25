@@ -1,0 +1,52 @@
+Ventilator MUMU PT Sibernetika
+
+Login:
+user: pi
+pass: ventilator
+
+NodeRed (port 1880)
+user: admin
+pass: ventilator
+
+MySQL (port 3306, sudo mysql -u ventinesia -p)
+user: ventinesia
+pass: ventilator
+database: ventilator
+table: kalibrasi2
+
+install awal: https://pimylifeup.com/raspberry-pi-mysql/
+
+Ganti data kalibrasi:
+
+USE ventilator;
+SHOW TABLES;
+SELECT * FROM kalibrasi2;
+
+CREATE TABLE `kalibrasi3` ( 
+`no` INT NOT NULL AUTO_INCREMENT , 
+`warn` INT NOT NULL , 
+`erat` INT NOT NULL , 
+`vti` INT NOT NULL , 
+`rr` INT NOT NULL , 
+`dti` FLOAT NOT NULL , 
+`step` INT NOT NULL , 
+PRIMARY KEY (`no`)
+);
+
+load data local infile '/home/pi/ventilator/kalibrasi/Kalibrasi5Aug.csv' 
+into table kalibrasi3  
+fields terminated by ','  
+enclosed by '"'  
+lines terminated by '\n'  
+(warn, erat, vti, rr, dti, step);
+
+DROP TABLE kalibrasi3;
+
+---
+
+kemudian pada node red, tab Actuator Motor, bagian 'ambil dari DB', node function sebelum database, ubah table yang dipilih di pernyataan msg.topic
+
+--------------------
+
+
+Kode buat arduino pakai yang kalibrasi.ino
