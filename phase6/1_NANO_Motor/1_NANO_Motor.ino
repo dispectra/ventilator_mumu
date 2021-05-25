@@ -1,18 +1,28 @@
-// Perlu data kalibrasi jml step vs volume tidal
+/*
+**************************************
+* Kode Untuk menggerakkan servo
+* Bagian dari project Ventilator MUMU
+* PT Sibernetika Teknologi Industri
+*
+* Device: Arduino Nano
+* Author:
+*      - Prasetyo Wibowo LS. (prasetyowls12@yahoo.com)
+***************************************
+*/
 
-// -- KONFIGURASI PIN ===============================================================
-// ENA- NC
-// ENA+ NC
-// DIR- GND
-// DIR+ DIR
-// PUL- GND
-// PUL+ PUL
 
-//-- TWEAKABLES =====================================================================
-// DIR = pin DIR+
-// PUL = pin PUL+
-// microPULg = settingan microPULg (1 / 2 / 4 / 8 / 16)
-// dirInhale = arah untuk inhale (HIGH / LOW)
+/* KONFIGURASI PIN *****************************
+* ENA     (DO)    PIN ENABLE
+* PUL     (DO)    PIN PULSE
+* DIR     (DO)    PIN ARAH
+* ARST    (DO)    PIN RESET
+* CWL     (DI)    LIMIT SWITCH CLOCKWISE
+* CCWL    (DI)    LIMIT SWITCH COUNTER-CLOCKWISE
+* EMGS    (DI)    EMERGENCY BUTTON
+* WARNN   (DI)    WARN TRIGGER (INTERRUPT)
+* Bt1     (DI)    TOMBOL UNTUK MENGGERAKAN MANUAL (MAJU)
+* Bt2     (DI)    TOMBOL UNTUK MENGGERAKAN MANUAL (MUNDUR)
+*************************************************/
 #define ENA 8
 #define PUL 10
 #define DIR 9
@@ -21,12 +31,11 @@
 #define CCWL 5
 #define EMGS 3
 #define WARNN 2
-#define offsetq 11
-
 #define Bt1 A4
 #define Bt2 A5
 
 
+#define offsetq 11
 #define dirInhale HIGH
 bool warnq = false;
 int stateq = 2;
@@ -88,8 +97,6 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(EMGS), updateEMGS, CHANGE);
   attachInterrupt(digitalPinToInterrupt(WARNN), triggerWarn, FALLING);
-
-
 
   //-- KALIBRASI
   Serial.println("Callibrating...");
@@ -273,107 +280,6 @@ void updateParam(float vol, int RRq, float ERatq){
   float offsetInhaleq= 0;
   float a,b,c;
 
-//  if(vol == 300){
-//    stepTidal = 4000;
-//    if(ERatq ==1){
-//      c = 0.000650547;
-//      b = -0.028619167;
-//      a = 0.354092703;
-//      if(RRq == 10){stepTidal=4460;}
-//      if(RRq == 12){stepTidal=4200;}
-//      if(RRq == 14){stepTidal=4050;}
-//    } else if(ERatq == 2){
-//      c = 0.000273647;
-//      b = -0.018056717;
-//      a = 0.190179239;
-//    } else if(ERatq == 3){
-//      c = 0.000177588;
-//      b = -0.016726554;
-//      a = 0.14036616;
-//      if(RRq == 25){stepTidal=4200;}
-//      if(RRq == 30){stepTidal=4200;}
-//    }
-//  }
-//
-//  else if(vol == 400){
-//    stepTidal = 4750;
-//    if(ERatq ==1){
-//      c = 2.80764E-05;
-//      b = 0.002991068;
-//      a = -0.023063682;
-//      if(RRq == 10){stepTidal=4900;}
-//      if(RRq == 12){stepTidal=4750;}
-//    } else if(ERatq == 2){
-//      c = 0.000264859;
-//      b = -0.016527119;
-//      a = 0.152748413;
-//      if(RRq == 20){stepTidal=4800;}
-//      if(RRq == 25){stepTidal=4900;}
-//      if(RRq == 30){stepTidal=4900;}
-//    } else if(ERatq == 3){
-//      c = 0.000154945;
-//      b = -0.020846611;
-//      a = 0.178253482;
-//      if(RRq == 20 || RRq == 25 || RRq == 30){stepTidal=5200;}
-//      if(RRq == 18 || RRq == 16){stepTidal=4900;}
-//    }
-//  } else if(vol == 500){
-//    stepTidal = 5430;
-//    if(ERatq ==1){
-//      c = -6.55388E-06;
-//      b =  0.004163627;
-//      a = -0.051711605;
-//    } else if(ERatq == 2){
-//      c = 0.000361423;
-//      b = -0.020693201;
-//      a = 0.159466747;
-//      if(RRq == 10){stepTidal=5280;}
-//      if(RRq == 25){stepTidal=5600;}
-//      if(RRq == 30){stepTidal=5800;}
-//    } else if(ERatq == 3){
-//      c = 4.48447E-05;
-//      b = -0.014660329;
-//      a = 0.06594389;
-//      if(RRq == 15){stepTidal=5500;}
-//      if(RRq == 16){stepTidal=5600;}
-//      if(RRq == 18){stepTidal=5800;}
-//      if(RRq == 20){stepTidal=5900;}
-//      if(RRq == 25){stepTidal=6000;}
-//      if(RRq == 30){stepTidal=6100;}
-//    }
-//  } else if(vol == 600){
-//    stepTidal = 6060;
-//    if(ERatq ==1){
-//      c = -0.000252947;
-//      b = 0.008377475;
-//      a = -0.000950374;
-//      if(RRq < 20){stepTidal=5960;}
-//      if(RRq == 30){stepTidal=6200;}
-//    } else if(ERatq == 2){
-//      c = -0.000345664;
-//      b = 0.002713639;
-//      a = -0.034269684;
-//      if(RRq == 10){stepTidal=5900;}
-//      if(RRq == 12){stepTidal=5960;}
-//      if(RRq == 25){stepTidal=6300;}
-//      if(RRq == 30){stepTidal=6400;}
-//    } else if(ERatq == 3){
-//      c = 0.000479443;
-//      b = -0.031616575;
-//      a = 0.18875765;
-//      if(RRq == 12){stepTidal=6100;}
-//      if(RRq == 14){stepTidal=6100;}
-//      if(RRq == 15){stepTidal=6100;}
-//      if(RRq == 16){stepTidal=6100;}
-//      if(RRq == 18){stepTidal=6200;}
-//      if(RRq == 20){stepTidal=6350;}
-//      if(RRq == 25){stepTidal=6400;}
-//      if(RRq == 30){stepTidal=6400;}
-//    }
-//  }
-//
-//  offsetInhaleq = a + b*RRq + c*RRq*RRq;
-//
   timeInhale += p_del/2*1000000;
 
   timeExhale = (60000 / float(RRq)) * (float(ERatq) / float(IRat + ERatq)) * 1000; // dalam microseconds
